@@ -1,0 +1,23 @@
+# Vérifie chaque proposition de modification (pull request) avant qu'on l'accepte.
+name: Vérifier le code
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntaxe des fichiers Apps Script
+        run: |
+          for f in apps-script/*.js; do
+            echo "→ $f"
+            node --check "$f"
+          done
+      - name: Fichier de configuration Apps Script
+        run: node -e "JSON.parse(require('fs').readFileSync('apps-script/appsscript.json','utf8')); console.log('appsscript.json OK')"

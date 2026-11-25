@@ -1,0 +1,54 @@
+# Envoie automatiquement le code vers Google Apps Script
+# quand une pull request est acceptée (fusionnée) dans la branche main.
+name: Déployer vers Apps Script
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps-script/**'
+      - '.github/workflows/deployer-apps-script.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deployer-apps-script
+  cancel-in-progress: false
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Installer clasp (outil Google)
+        run: npm install -g @google/clasp@2.4.2
+
+      - name: Vérifier la configuration
+        run: |
+          if grep -q "A_REMPLACER" apps-script/.clasp.json; then
+            echo "::error::L'ID du script n'est pas encore renseigné dans apps-script/.clasp.json (voir docs/MISE-EN-PLACE.md, étape 1)."
+            exit 1
+          fi
+
+      - name: Installer la clé d'accès Google
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "::error::Le secret CLASPRC_JSON est manquant (voir docs/MISE-EN-PLACE.md, étape 3)."
+            exit 1
+          fi
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+
+      - name: Envoyer le code vers Apps Script
+        working-directory: apps-script
+        run: clasp push --force
+
+      - name: Mettre à jour la page web (même adresse)
+        if: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID != '' }}
+        working-directory: apps-script
+        env:
+          DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
+        run: clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "Version ${GITHUB_SHA::7}"
