@@ -80,6 +80,8 @@ main{padding:14px 20px 60px;max-width:1700px;margin:0 auto}
 .slot.virt{border-style:solid;cursor:default}
 .slot.hatch{background:repeating-linear-gradient(135deg,var(--c) 0 6px,color-mix(in srgb,var(--c) 62%,#fff) 6px 12px)}
 .slot.ghost{opacity:.45;cursor:not-allowed}
+.preemb{position:absolute;top:0;bottom:0;left:0;z-index:3;background:repeating-linear-gradient(135deg,rgba(100,116,139,.18) 0 5px,rgba(255,255,255,.55) 5px 10px);border-right:2px solid #64748b;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#334155;font-weight:600;pointer-events:none;white-space:nowrap;overflow:hidden}
+.nb.sais{background:#fef3c7;color:#92400e}
 .slot span{padding:0 2px;overflow:hidden;text-overflow:clip;pointer-events:none;letter-spacing:-.2px}
 .slot .h-l,.slot .h-r{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:3}
 .slot .h-l{left:0}.slot .h-r{right:0}
@@ -578,7 +580,10 @@ function analyze(e, w) {
   if (days.some(D => D.poste))
     add('Poste de nuit', fmtH(Math.max(...days.filter(D => D.poste).map(D => D.work))), '≤ ' + R.nuitMaxPoste + 'h', !longNights.length, longNights.map(D => 'Nuit du ' + dayName(w, D.i) + ' : ' + fmtH(D.work)));
   if (emp(e) && emp(e).nuit) { const an = avgN(nightPostOf, e, w, R.moyN); add('Nuit : moyenne sur ' + R.moyN + ' semaines', fmtH(an), '≤ ' + R.nuitMoy + 'h', an <= R.nuitMoy * 60); }
-  return { counter, eff, night, ferieWorked, absences, recup, pauses, days, checks, alerts: checks.filter(c => !c.ok), ecart: counter - R.legale * 60 };
+  const em = embaucheMin(emp(e), w);
+  const avantEmb = em !== null && em >= WEEK;                       // semaine entière avant l'embauche
+  const cible = em === null || em <= 0 ? R.legale * 60 : avantEmb ? 0 : Math.round(R.legale * 60 * (WEEK - em) / WEEK); // prorata
+  return { counter, eff, night, ferieWorked, absences, recup, pauses, days, checks, alerts: checks.filter(c => !c.ok), ecart: counter - cible, cible, avantEmb };
 }
 
 /* ---------- morceaux d'affichage communs ---------- */
@@ -623,6 +628,8 @@ function trackHtml(e, w, o, span) {
   }
   for (const s of getSlots(w - 1)) if (s.emp === e && s.end > WEEK) h += slotHtml({ ...s, start: s.start - WEEK, end: s.end - WEEK }, o, span, true);
   for (const s of empSlots(e, w)) h += slotHtml(s, o, span);
+  const em = embaucheMin(emp(e), w);
+  if (em !== null && em > o) { const fin = Math.min(em, o + span); h += `<div class="preemb" style="width:${(fin - o) / span * 100}%" title="Saisonnier : embauche le ${esc(emp(e).embauche)}">${fin - o >= DAY ? 'avant embauche' : ''}</div>`; }
   if (drag && drag.kind === 'new' && drag.emp === e && drag.cand) {
     const c = drag.cand, isN = c.type === 'travail_nuit';
     const txt = drag.err ? 'chevauchement' : type(c.type).mode === 'jour' ? Math.round((c.end - c.start) / DAY) + ' j' : hc(c.start) + '–' + hc(c.end, true) + ' · ' + fmtH(workMin(c)) + (isN ? ' · nuit' : '');
@@ -654,10 +661,10 @@ function renderPlanning() {
     for (const e of es) {
       const a = analyze(e.id, w); tot += a.counter; if (a.alerts.length) nAlert++;
       h += `<div class="prow ${state.sel === e.id ? 'sel' : ''}">
-        <div class="pname" data-emp="${e.id}" title="Voir le détail des contrôles"><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb" title="Travailleur de nuit">nuit</span>' : ''}</div></div>
+        <div class="pname" data-emp="${e.id}" title="Voir le détail des contrôles"><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb" title="Travailleur de nuit">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais" title="Saisonnier' + (e.embauche ? ', embauche le ' + esc(e.embauche) : '') + '">saisonnier</span>' : ''}</div></div>
         ${trackHtml(e.id, w, 0, WEEK)}
         <div class="sc num" title="${esc((a.absences ? 'dont ' + fmtH(a.absences) + ' d\'absences au forfait. ' : '') + (a.pauses ? fmtH(a.pauses) + ' de pauses déduites.' : ''))}">${fmtH(a.counter)}</div>
-        <div class="sc">${ecartHtml(a.ecart)}</div>
+        <div class="sc">${a.avantEmb ? `<span class="hint" title="Embauche le ${esc(e.embauche)}">pas encore<br>embauché</span>` : ecartHtml(a.ecart)}${a.cible && a.cible !== state.rules.legale * 60 ? `<small class="hint" title="Objectif au prorata (embauche le ${esc(e.embauche)})">/ ${fmtH(a.cible)}</small>` : ''}</div>
         <div class="sc num muted">${a.night ? fmtH(a.night) : '—'}</div>
         <div class="sc">${ctlHtml(e, a)}</div>
       </div>`;
@@ -697,8 +704,8 @@ function renderMobile() {
     for (const e of es) {
       const a = analyze(e.id, w), D = a.days[d];
       h += `<div class="mcard ${state.sel === e.id ? 'sel' : ''}">
-        <div class="mhead" data-emp="${e.id}"><div><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb">nuit</span>' : ''}</div></div>
-          <div class="mstats"><span class="num" title="Heures comptées sur la semaine">${fmtH(a.counter)}</span>${ecartHtml(a.ecart)}${ctlHtml(e, a, true)}</div></div>
+        <div class="mhead" data-emp="${e.id}"><div><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais">saisonnier' + (e.embauche ? ' · ' + esc(e.embauche) : '') + '</span>' : ''}</div></div>
+          <div class="mstats"><span class="num" title="Heures comptées sur la semaine">${fmtH(a.counter)}</span>${a.avantEmb ? '<span class="hint">pas encore embauché</span>' : ecartHtml(a.ecart)}${ctlHtml(e, a, true)}</div></div>
         <div class="mtrack"><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div>${trackHtml(e.id, w, d * DAY, DAY)}</div>
         <div class="mfoot"><span>${dayName(w, d)} : ${D.work ? '<b style="color:var(--ink)">' + fmtH(D.work) + '</b> de travail · amplitude ' + fmtH(D.last - D.first) + (D.night ? ' · nuit ' + fmtH(D.night) : '') : 'pas de travail'}</span><button class="btn sm" data-add="${e.id}">+ Ajouter</button></div>
         ${state.sel === e.id ? '<div class="mdetail">' + detailHtml(e) + '</div>' : ''}
@@ -711,7 +718,19 @@ function renderMobile() {
 /* ---------- glisser (souris ou doigt) ---------- */
 let drag = null;
 const snap = m => Math.round(m / state.step) * state.step;
+/** Minute (dans la semaine w) où commence le contrat d'un saisonnier ; null si permanent / pas de date. */
+function embaucheMin(e, w) {
+  if (!e || e.contrat !== 'saisonnier') return null;
+  const d = parseFd(e.embauche || ''); if (!d) return null;
+  return (dayIndex(d) - w * 7) * DAY;
+}
+function avantEmbauche(c) { const m = embaucheMin(emp(c.emp), state.week); return m !== null && c.start < m; }
+function motifRefus(c, ignoreId) {
+  if (avantEmbauche(c)) return 'Impossible : avant la date d\'embauche (' + emp(c.emp).embauche + ').';
+  return overlaps(c, ignoreId) ? 'Impossible : ce créneau chevauche un créneau existant.' : '';
+}
 function overlaps(c, ignoreId) {
+  if (avantEmbauche(c)) return true; // pas de créneau avant l'embauche d'un saisonnier
   const lay = type(c.type).mode;
   return getSlots(state.week).some(s => s.id !== ignoreId && s.emp === c.emp && type(s.type).mode === lay && s.start < c.end && c.start < s.end);
 }
@@ -785,7 +804,7 @@ function onUp(ev) {
   const d = drag; drag = null;
   if (d.kind === 'new') {
     if (!d.moved) { renderAll(); if (d.bandSlot) openPop(d.bandSlot, ev.clientX, ev.clientY); return; }
-    if (d.err) toast('Impossible : ce créneau chevauche un créneau existant.');
+    if (d.err) toast(motifRefus(d.cand) || 'Impossible : ce créneau chevauche un créneau existant.');
     else if (d.cand) { const ns = { id: newId(), ...d.cand }; getSlots(state.week).push(ns); markSlot(ns); }
     renderAll(); return;
   }
@@ -812,12 +831,13 @@ function copierCreneau(s, jours, salaries) {
     getSlots(state.week).push(c); markSlot(c); faits++;
   }
   closePop(); renderAll();
-  toast(faits ? `${faits} créneau${faits > 1 ? 'x' : ''} copié${faits > 1 ? 's' : ''}` + (occupes ? ` · ${occupes} ignoré${occupes > 1 ? 's' : ''} (place déjà occupée)` : '')
-              : (occupes ? 'Rien copié : les places choisies sont déjà occupées.' : 'Cochez au moins un autre jour ou un autre salarié.'));
+  toast(faits ? `${faits} créneau${faits > 1 ? 'x' : ''} copié${faits > 1 ? 's' : ''}` + (occupes ? ` · ${occupes} ignoré${occupes > 1 ? 's' : ''} (place occupée ou avant embauche)` : '')
+              : (occupes ? 'Rien copié : places déjà occupées ou avant la date d\'embauche.' : 'Cochez au moins un autre jour ou un autre salarié.'));
 }
 function addOnDay(e, ev) { // bouton « + Ajouter » (smartphone)
   const t = type(state.tool === 'gomme' ? 'travail_jour' : state.tool), d = state.mday;
   const c = autoType(t.mode === 'jour' ? { emp: e, type: t.id, start: d * DAY, end: (d + 1) * DAY } : { emp: e, type: t.id, start: d * DAY + 8 * 60, end: d * DAY + 16 * 60 });
+  if (avantEmbauche(c)) return toast(motifRefus(c));
   if (overlaps(c)) return toast('Il y a déjà un créneau à cet endroit : touchez-le pour le modifier.');
   const s = { id: newId(), ...c }; getSlots(state.week).push(s); markSlot(s); renderAll(); openPop(s, ev.clientX, ev.clientY);
 }
@@ -866,7 +886,7 @@ function openPop(s, x, y) {
     if ($('#pPause')) c.pause = $('#pPause').value === '' ? undefined : +$('#pPause').value;
     autoType(c);
     if (!validSlot(c)) { toast('La fin doit être après le début.'); return openPop(s, x, y); }
-    if (overlaps(c, s.id)) { toast('Impossible : chevauchement avec un autre créneau.'); return openPop(s, x, y); }
+    if (overlaps(c, s.id)) { toast(motifRefus(c, s.id)); return openPop(s, x, y); }
     Object.assign(s, c); if (c.pause === undefined) delete s.pause; markSlot(s);
     renderAll(); openPop(s, x, y);
   };
@@ -926,10 +946,12 @@ $('#heatmap').addEventListener('click', ev => { const c = ev.target.closest('td[
 /* ---------- RÉGLAGES ---------- */
 function renderSettings() {
   $('#sheetInfo').innerHTML = state.sheetUrl ? `<a href="${esc(state.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a> <span class="hint">· connecté : ${esc(state.user || '—')}</span>` : '';
-  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
+  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
     state.emps.map(e => `<tr data-e="${e.id}"><td><input type="text" data-f="prenom" value="${esc(e.prenom)}"></td><td><input type="text" data-f="nom" value="${esc(e.nom)}"></td>
       <td><select data-f="station">${state.stations.map(s => `<option ${s === e.station ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></td>
       <td><input type="text" data-f="poste" value="${esc(e.poste)}"></td>
+      <td><select data-f="contrat"><option value="permanent" ${e.contrat !== 'saisonnier' ? 'selected' : ''}>Permanent</option><option value="saisonnier" ${e.contrat === 'saisonnier' ? 'selected' : ''}>Saisonnier</option></select></td>
+      <td>${e.contrat === 'saisonnier' ? `<input type="text" class="date" data-f="embauche" placeholder="jj/mm/aaaa" value="${esc(e.embauche || '')}">` : '<span class="hint">—</span>'}</td>
       <td style="text-align:center"><input type="checkbox" data-f="nuit" ${e.nuit ? 'checked' : ''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="actif" ${e.actif ? 'checked' : ''}></td>
       <td><button class="icon" data-del-emp="${e.id}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
@@ -959,7 +981,12 @@ function renderSettings() {
 }
 $('#v-reglages').addEventListener('change', ev => {
   const t = ev.target;
-  if (t.dataset.f) { const e = emp(t.closest('tr').dataset.e); e[t.dataset.f] = t.type === 'checkbox' ? t.checked : t.value; }
+  if (t.dataset.f === 'embauche') {
+    const e = emp(t.closest('tr').dataset.e), d = parseFd(t.value);
+    if (t.value.trim() && !d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); }
+    e.embauche = d ? fd(d) : '';
+  }
+  else if (t.dataset.f) { const e = emp(t.closest('tr').dataset.e); e[t.dataset.f] = t.type === 'checkbox' ? t.checked : t.value; }
   else if (t.dataset.rule) state.rules[t.dataset.rule] = +t.value;
   else if (t.dataset.tf) { const ty = type(t.closest('tr').dataset.t); ty[t.dataset.tf] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? +t.value : t.value; if (ty.mode === 'jour') ty.effectif = false; else ty.deduit = false; }
   else if (t.dataset.stI) { const i = +t.dataset.stI, old = state.stations[i]; state.stations[i] = t.value; state.emps.forEach(e => { if (e.station === old) e.station = t.value; }); if (state.station === old) state.station = t.value; }
@@ -978,7 +1005,7 @@ $('#v-reglages').addEventListener('click', ev => {
   else if (t.dataset.delType) { if (Object.values(state.slots).some(a => a.some(z => z.type === t.dataset.delType))) return toast('Ce type est utilisé dans le planning : impossible de le supprimer.'); state.types = state.types.filter(x => x.id !== t.dataset.delType); }
   else if (t.dataset.delFer) state.feries = state.feries.filter(x => x.d !== t.dataset.delFer);
   else if (t.dataset.delSt) { const s = state.stations[+t.dataset.delSt]; if (state.emps.some(e => e.station === s)) return toast('Déplacez d\'abord les salariés de cette station.'); state.stations.splice(+t.dataset.delSt, 1); }
-  else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true });
+  else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '' });
   else if (t.id === 'addType') state.types.push({ id: 'type_' + newId().slice(1), nom: 'Nouveau type', couleur: '#0891b2', mode: 'heures', compteur: true, effectif: true, forfait: 0, deduit: false });
   else if (t.id === 'addFer') state.feries.push({ d: iso(new Date()), nom: 'Nouveau jour férié', chome: false });
   else if (t.id === 'addStation') state.stations.push('Nouvelle station');
