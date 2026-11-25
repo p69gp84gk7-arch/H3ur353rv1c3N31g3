@@ -265,7 +265,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .login{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:20px 22px;width:min(360px,92vw);text-align:left;color:var(--ink)}
 .login h2{margin:0 0 4px;font-size:18px;color:var(--brand)}
 .login label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 4px}
-.login input[type=text],.login input[type=password]{width:100%;font:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--line2);border-radius:8px}
+.login input[type=text],.login input[type=password],.login input[type=email]{width:100%;font:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--line2);border-radius:8px}
 .login .err{color:var(--neg);font-size:13px;margin-top:10px;min-height:1em}
 .login .btn{width:100%;margin-top:14px;padding:10px;font-size:15px}
 .moi{color:#cbd5e1;font-size:12.5px;display:flex;gap:10px;align-items:center}
@@ -548,6 +548,7 @@ function afficherConnexion(msg) {
     <div class="err" id="lgErr"></div>
     <button class="btn primary" type="submit" id="lgOk">Se connecter</button></form>`;
   $('#lgId').focus();
+  if (hasServer) google.script.run.withSuccessHandler(e => { if (e && e.installation) afficherInstallation(); }).withFailureHandler(() => {}).etatConnexion();
   $('#loginForm').onsubmit = ev => {
     ev.preventDefault();
     const id = $('#lgId').value.trim(), mdp = $('#lgMdp').value, rester = $('#lgReste').checked;
@@ -558,6 +559,37 @@ function afficherConnexion(msg) {
       if (pending.ups.size || pending.dels.size || settingsPending) { flushSlots(); if (settingsPending) flushSettings(); waitThenReload(); }
       else init();
     }).withFailureHandler(err => { $('#lgOk').disabled = false; $('#lgErr').textContent = String(err && err.message || err).replace(/^Error:\s*/, ''); }).connexion(id, mdp, rester);
+  };
+}
+function afficherInstallation() {
+  $('#loading').style.display = 'flex';
+  $('#loadingMsg').innerHTML = `<form class="login" id="instForm" autocomplete="off">
+    <h2>❄ Première ouverture</h2>
+    <div class="hint">Aucun compte n'existe encore. Créez le compte <b>administrateur</b> (le vôtre). Cette étape n'est possible qu'une seule fois.</div>
+    <label for="inMail">Adresse Gmail du propriétaire du Google Sheet</label><input type="email" id="inMail" autocomplete="email" autocapitalize="none" spellcheck="false">
+    <div class="hint" style="margin:2px 0 0;font-size:12px">Sert uniquement à vérifier que c'est bien vous ; elle n'est pas enregistrée.</div>
+    <label for="inId">Identifiant (ex. vincent)</label><input type="text" id="inId" autocomplete="username" autocapitalize="none" spellcheck="false">
+    <label for="inNom">Nom affiché</label><input type="text" id="inNom" placeholder="ex. Vincent – chef de service">
+    <label for="inMdp">Mot de passe (au moins 8 caractères)</label><input type="password" id="inMdp" autocomplete="new-password">
+    <label for="inMdp2">Confirmer le mot de passe</label><input type="password" id="inMdp2" autocomplete="new-password">
+    <label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" id="inReste" checked> Rester connecté sur cet appareil (30 jours)</label>
+    <div class="err" id="inErr"></div>
+    <button class="btn primary" type="submit" id="inOk">Créer le compte administrateur</button></form>`;
+  $('#inMail').focus();
+  $('#instForm').onsubmit = ev => {
+    ev.preventDefault();
+    const v = k => $('#' + k).value, err = m => { $('#inErr').textContent = m; };
+    if (!v('inMail').trim() || !v('inId').trim() || !v('inMdp')) return err('Remplissez l\'adresse Gmail, l\'identifiant et le mot de passe.');
+    if (v('inMdp').length < 8) return err('Le mot de passe doit faire au moins 8 caractères.');
+    if (v('inMdp') !== v('inMdp2')) return err('Les deux mots de passe ne sont pas identiques.');
+    const rester = $('#inReste').checked;
+    $('#inOk').disabled = true; err('');
+    google.script.run.withSuccessHandler(r => { ecrireJeton(r.jeton, rester); state.user = r.utilisateur; init(); toast('Compte administrateur créé. Ajoutez les chefs dans Réglages › Comptes.'); })
+      .withFailureHandler(e => {
+        $('#inOk').disabled = false; const m = String(e && e.message || e).replace(/^Error:\s*/, '');
+        if (/existe déjà/.test(m)) return afficherConnexion(m);
+        err(m);
+      }).creerPremierAdministrateur(v('inMail'), v('inId').trim(), v('inNom').trim(), v('inMdp'), rester);
   };
 }
 function seDeconnecter() {
