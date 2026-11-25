@@ -77,6 +77,7 @@ function chargerDonnees() {
     id: String(r['ID']), emp: String(r['ID salarié']), type: String(r['Type']),
     debut: versTexte_(r['Début'], "yyyy-MM-dd'T'HH:mm"), fin: versTexte_(r['Fin'], "yyyy-MM-dd'T'HH:mm"),
     pause: r[COL_PAUSE] === '' || r[COL_PAUSE] === null ? null : Number(r[COL_PAUSE]),
+    version: /^r/i.test(String(r['Version'] || '')) ? 'reel' : 'prevu',
   }));
   const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const modeles = lireTable_('Modèles').filter(r => r['ID'] !== '').map(r => ({
@@ -116,6 +117,7 @@ function enregistrerCreneaux(changements) {
       r[iDeb] = versDate_(c.debut, "yyyy-MM-dd'T'HH:mm"); r[col('Fin')] = versDate_(c.fin, "yyyy-MM-dd'T'HH:mm");
       r[col(COL_PAUSE)] = c.pause === null || c.pause === undefined || c.pause === '' ? '' : Number(c.pause);
       r[col('Modifié le')] = maintenant; r[col('Modifié par')] = qui;
+      if (col('Version') >= 0) r[col('Version')] = c.version === 'reel' ? 'Réel' : 'Prévisionnel';
       if (!existe) { pos.set(c.id, data.length); data.push(r); }
     });
     data.sort((a, b) => (a[iDeb] instanceof Date ? a[iDeb].getTime() : 0) - (b[iDeb] instanceof Date ? b[iDeb].getTime() : 0));
