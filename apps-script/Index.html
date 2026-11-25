@@ -1584,7 +1584,8 @@ function analyserCsv(rows) {
 }
 
 /* PDF (export RHéa en texte) : lecture dans le navigateur avec pdf.js, sans service extérieur */
-const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+// Pas de « // » dans une chaîne : Google Apps Script le prend pour un commentaire et coupe la ligne.
+const PDFJS = 'https:\/\/cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 let pdfjsPret = null;
 function chargerPdfJs() {
   if (pdfjsPret) return pdfjsPret;
