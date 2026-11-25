@@ -111,18 +111,19 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .hint{color:var(--muted);font-size:13px}
 
 /* --- bulle de modification --- */
-.pop{position:fixed;z-index:50;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:12px;width:300px;display:none;font-size:13px}
-.pop .pt{font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between}
-.pop label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);margin-bottom:8px}
-.pop select{font:inherit;font-size:13px;padding:5px 6px;border:1px solid var(--line2);border-radius:6px;color:var(--ink);background:#fff}
+.pop{position:fixed;z-index:50;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:0;width:300px;display:none;flex-direction:column;font-size:13px;overflow:hidden}
+.pop .pt{font-weight:700;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex:none}
+.pop .pbody{padding:8px 12px 4px;overflow-y:auto;flex:1 1 auto;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pop .pbody::-webkit-scrollbar{width:8px}.pop .pbody::-webkit-scrollbar-thumb{background:#cfd5dd;border-radius:4px}
+.pop label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.pop select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line2);border-radius:6px;color:var(--ink);background:#fff}
 .pop .pr{display:grid;grid-template-columns:1fr 92px;gap:6px;align-items:end}
-.pop .pr > select{margin-bottom:8px}
-.pop .calc{background:#f6f7f9;border-radius:8px;padding:8px 10px;margin:2px 0 10px;font-size:12.5px;line-height:1.55}
+.pop .pr > select{margin-bottom:6px}
+.pop .calc{background:#f6f7f9;border-radius:8px;padding:6px 10px;margin:2px 0 8px;font-size:12.5px;line-height:1.55}
 .pop .calc b{font-size:13.5px}
 .pop .auto{font-size:11.5px;color:#3730a3;margin:-4px 0 8px}
-.pop .pb{display:flex;justify-content:space-between}
-.pop{max-height:92vh;overflow:auto}
-.pcopy{border-top:1px solid var(--line);margin:2px 0 10px;padding-top:8px}
+.pop .pb{display:flex;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--line);background:#fff;flex:none}
+.pcopy{border-top:1px solid var(--line);margin:2px 0 8px;padding-top:6px}
 .pcopy summary{cursor:pointer;font-weight:650;color:var(--accent)}
 .pcl{font-size:12px;color:var(--muted);margin:8px 0 4px}
 .pcd{display:flex;flex-wrap:wrap;gap:4px}
@@ -205,7 +206,8 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
   .weeklabel{min-width:0;flex:1;font-size:14.5px}
   .bar{gap:6px}
   .tools{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .pop{left:0!important;right:0;bottom:0;top:auto!important;width:auto;border-radius:16px 16px 0 0;padding:14px 16px 20px;font-size:14px}
+  .pop{left:0!important;right:0;bottom:0;top:auto!important;width:auto;border-radius:16px 16px 0 0;font-size:14px}
+  .pop .pt{padding:12px 16px 8px}.pop .pbody{padding:8px 16px 4px}.pop .pb{padding:10px 16px calc(12px + env(safe-area-inset-bottom))}
   .pop select{font-size:15px;padding:8px}
   .cols,.sgrid,.rules{grid-template-columns:1fr}
   .kpis{grid-template-columns:1fr 1fr;gap:8px}
@@ -437,7 +439,7 @@ function init() {
   $('#loadingMsg').textContent = 'Chargement du planning…';
   if (!hasServer) { $('#loadingMsg').textContent = 'Cette page doit être ouverte depuis son adresse Google Apps Script.'; return; }
   google.script.run.withSuccessHandler(onData).withFailureHandler(err => {
-    $('#loadingMsg').innerHTML = 'Impossible de charger les données :<br>' + esc(err && err.message || err) + '<br><br><button class="btn" onclick="init()">Réessayer</button>';
+    $('#loadingMsg').innerHTML = 'Impossible de charger les données :<br>' + esc(String(err && err.message || err).replace(/^Error:\s*/, '')) + '<br><br><button class="btn" onclick="init()">Réessayer</button>';
   }).chargerDonnees();
 }
 function onData(d) {
@@ -823,6 +825,11 @@ function addOnDay(e, ev) { // bouton « + Ajouter » (smartphone)
 /* ---------- bulle de modification ---------- */
 const pop = $('#pop');
 function closePop() { pop.style.display = 'none'; }
+// La bulle se recale toute seule dans l'écran quand sa taille change (ex. ouverture de « Copier »)
+new ResizeObserver(() => {
+  if (isMob() || pop.style.display !== 'flex') return;
+  pop.style.top = Math.max(8, Math.min(parseInt(pop.style.top, 10) || 8, innerHeight - pop.offsetHeight - 8)) + 'px';
+}).observe(pop);
 function dayOpts(sel, max) { let o = ''; for (let i = 0; i <= max; i++) o += `<option value="${i}" ${i === sel ? 'selected' : ''}>${i === 7 ? 'Lun suivant' : dayName(state.week, i)}</option>`; return o; }
 function timeOpts(min) { const v = tv(min); let o = ''; for (let m = 0; m < DAY; m += state.step) { const t = tv(m); o += `<option value="${t}" ${t === v ? 'selected' : ''}>${t.replace(':', 'h')}</option>`; } return o; }
 function openPop(s, x, y) {
@@ -830,7 +837,8 @@ function openPop(s, x, y) {
   const p = pauseOf(s), nw = isWork(s) ? nightWork(s) : 0;
   const pauseOpts = [['', `Automatique (${R.pauseAuto} min au-delà de ${R.pauseSeuil}h)`], ['0', 'Aucune'], ['20', '20 min'], ['30', '30 min'], ['45', '45 min'], ['60', '1h'], ['90', '1h30']]
     .map(([v, l]) => `<option value="${v}" ${(s.pause == null ? '' : String(s.pause)) === v ? 'selected' : ''}>${l}</option>`).join('');
-  pop.innerHTML = `<div class="pt"><span>Modifier le créneau</span><button class="icon" id="pX">✕</button></div>
+  const garder = pop.style.display === 'flex' && pop.dataset.sid === String(s.id) ? pop.querySelector('.pbody').scrollTop : 0;
+  pop.innerHTML = `<div class="pt"><span>Modifier le créneau</span><button class="icon" id="pX" title="Fermer">✕</button></div><div class="pbody">
     <label>Type<select id="pType">${state.types.filter(o => o.id !== 'travail_nuit').map(o => `<option value="${o.id}" ${o.id === (isWork(s) ? 'travail_jour' : s.type) ? 'selected' : ''}>${esc(o.nom)}</option>`).join('')}</select></label>
     ${isWork(s) ? `<div class="auto">${s.type === 'travail_nuit' ? '🌙 Classé automatiquement en travail de nuit' : '☀ Travail de jour'}${nw ? ' · ' + fmtH(nw) + ' entre ' + R.nuitDebut + 'h et ' + R.nuitFin + 'h' : ''}</div>` : ''}
     <div class="pr"><label>Début<select id="pSD">${dayOpts(Math.floor(s.start / DAY), 6)}</select></label><select id="pST" ${jour ? 'disabled' : ''}>${timeOpts(s.start)}</select></div>
@@ -845,8 +853,11 @@ function openPop(s, x, y) {
       <div class="pce">${state.emps.filter(e => e.actif).map(e => `<label><input type="checkbox" data-cemp="${esc(e.id)}" ${e.id === s.emp ? 'checked' : ''}>${esc(e.prenom)} ${esc(e.nom)}</label>`).join('')}</div>
       <button class="btn" id="pCopy">Copier</button>
     </details>
-    <div class="pb"><button class="btn danger" id="pDel">Supprimer</button><button class="btn primary" id="pOk">OK</button></div>`;
-  pop.style.display = 'block';
+    </div><div class="pb"><button class="btn danger" id="pDel">Supprimer</button><button class="btn primary" id="pOk">OK</button></div>`;
+  pop.dataset.sid = String(s.id);
+  pop.style.display = 'flex';
+  pop.style.maxHeight = (isMob() ? Math.round(innerHeight * 0.85) : innerHeight - 16) + 'px'; // jamais plus grande que l'écran
+  pop.querySelector('.pbody').scrollTop = garder; // reste au même endroit après une modification
   if (!isMob()) { pop.style.left = Math.min(x + 8, innerWidth - 310) + 'px'; pop.style.top = Math.max(8, Math.min(y + 8, innerHeight - pop.offsetHeight - 8)) + 'px'; }
   const apply = () => {
     const nt = type($('#pType').value), pm = v => { const [a, b] = v.split(':').map(Number); return a * 60 + b; };
@@ -867,7 +878,7 @@ function openPop(s, x, y) {
     [...pop.querySelectorAll('[data-cday]:checked')].map(x => +x.dataset.cday),
     [...pop.querySelectorAll('[data-cemp]:checked')].map(x => x.dataset.cemp));
 }
-document.addEventListener('pointerdown', ev => { if (pop.style.display === 'block' && !pop.contains(ev.target) && !ev.target.closest('.slot,[data-add]')) closePop(); }, true);
+document.addEventListener('pointerdown', ev => { if (pop.style.display === 'flex' && !pop.contains(ev.target) && !ev.target.closest('.slot,[data-add]')) closePop(); }, true);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closePop(); });
 
 /* ---------- RÉCAP ---------- */
