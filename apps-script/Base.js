@@ -166,6 +166,6 @@ function journaliser_(action, details) {
   const sh = ouvrirBase_().getSheetByName('Journal');
   if (!sh) return;
   let qui = '';
-  try { qui = Session.getActiveUser().getEmail(); } catch (e) { /* inconnu */ }
+  try { qui = utilisateur_(); } catch (e) { /* inconnu */ }
   sh.appendRow([new Date(), qui, action, details || '']);
 }

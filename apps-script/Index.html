@@ -502,6 +502,17 @@ function workBg(s) { // dégradé : partie jour en bleu, partie nuit en bleu nui
 
 /* ---------- lecture / enregistrement dans le Google Sheet ---------- */
 const hasServer = typeof google !== 'undefined' && google.script && google.script.run;
+/* Si quelque chose bloque au démarrage : un message clair et un bouton « Réessayer » plutôt qu'un écran figé. */
+function bloqueDemarrage(txt) {
+  if ($('#loading').style.display === 'none' || $('#loginForm') || $('#instForm')) return;
+  $('#loadingMsg').innerHTML = esc(txt) + '<br><br><button class="btn primary" onclick="location.reload()">Réessayer</button>';
+}
+window.addEventListener('error', ev => bloqueDemarrage('Erreur dans la page : ' + (ev.message || ev.error || '?')));
+let veilleDemarrage = null;
+function veiller(etape) {
+  clearTimeout(veilleDemarrage);
+  veilleDemarrage = setTimeout(() => bloqueDemarrage('Google ne répond pas (' + etape + '). Vérifiez la connexion internet puis réessayez.'), 45000);
+}
 function getSlots(w) { return state.slots[w] || (state.slots[w] = []); }
 function empSlots(e, w) { // créneaux + fériés chômés posés automatiquement
   const own = getSlots(w).filter(s => s.emp === e), out = own.slice();
@@ -553,12 +564,15 @@ function afficherConnexion(msg) {
     ev.preventDefault();
     const id = $('#lgId').value.trim(), mdp = $('#lgMdp').value, rester = $('#lgReste').checked;
     if (!id || !mdp) { $('#lgErr').textContent = 'Saisissez votre identifiant et votre mot de passe.'; return; }
-    $('#lgOk').disabled = true; $('#lgErr').textContent = '';
+    $('#lgOk').disabled = true; $('#lgOk').textContent = 'Connexion…'; $('#lgErr').textContent = '';
+    const attente = setTimeout(() => { $('#lgOk').disabled = false; $('#lgOk').textContent = 'Se connecter'; $('#lgErr').textContent = 'Google ne répond pas : réessayez dans un instant.'; }, 45000);
     google.script.run.withSuccessHandler(r => {
+      clearTimeout(attente);
+      if (!r || !r.jeton) { $('#lgOk').disabled = false; $('#lgOk').textContent = 'Se connecter'; $('#lgErr').textContent = 'Réponse inattendue du serveur : réessayez.'; return; }
       ecrireJeton(r.jeton, rester); state.user = r.utilisateur;
       if (pending.ups.size || pending.dels.size || settingsPending) { flushSlots(); if (settingsPending) flushSettings(); waitThenReload(); }
       else init();
-    }).withFailureHandler(err => { $('#lgOk').disabled = false; $('#lgErr').textContent = String(err && err.message || err).replace(/^Error:\s*/, ''); }).connexion(id, mdp, rester);
+    }).withFailureHandler(err => { clearTimeout(attente); $('#lgOk').disabled = false; $('#lgOk').textContent = 'Se connecter'; $('#lgErr').textContent = String(err && err.message || err).replace(/^Error:\s*/, ''); }).connexion(id, mdp, rester);
   };
 }
 function afficherInstallation() {
@@ -625,7 +639,13 @@ function init() {
   $('#loadingMsg').textContent = 'Chargement du planning…';
   if (!hasServer) { $('#loadingMsg').textContent = 'Cette page doit être ouverte depuis son adresse Google Apps Script.'; return; }
   if (!lireJeton()) return afficherConnexion();
-  google.script.run.withSuccessHandler(onData).withFailureHandler(err => {
+  veiller('chargement du planning');
+  google.script.run.withSuccessHandler(d => {
+    clearTimeout(veilleDemarrage);
+    if (!d || !d.emps) { $('#loadingMsg').innerHTML = 'Réponse inattendue du serveur.<br><br><button class="btn" onclick="init()">Réessayer</button>'; return; }
+    try { onData(d); } catch (e) { $('#loading').style.display = 'flex'; $('#loadingMsg').innerHTML = 'Erreur à l\'affichage du planning : ' + esc(e.message || e) + '<br><br><button class="btn" onclick="init()">Réessayer</button>'; console.error(e); }
+  }).withFailureHandler(err => {
+    clearTimeout(veilleDemarrage);
     if (estSession(err)) { ecrireJeton(''); return afficherConnexion(String(err.message || err).replace(/^Error:\s*/, '').replace(/^SESSION\s*:\s*/, '')); }
     $('#loadingMsg').innerHTML = 'Impossible de charger les données :<br>' + esc(String(err && err.message || err).replace(/^Error:\s*/, '')) + '<br><br><button class="btn" onclick="init()">Réessayer</button>';
   }).chargerDonnees(lireJeton());
