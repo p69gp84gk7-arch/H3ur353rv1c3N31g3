@@ -262,6 +262,14 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
   .card{padding:12px}
 }
 .sync.ok{color:#86efac}.sync.pending{color:#fde68a}.sync.err{color:#fca5a5;font-weight:700}
+.login{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:20px 22px;width:min(360px,92vw);text-align:left;color:var(--ink)}
+.login h2{margin:0 0 4px;font-size:18px;color:var(--brand)}
+.login label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 4px}
+.login input[type=text],.login input[type=password]{width:100%;font:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--line2);border-radius:8px}
+.login .err{color:var(--neg);font-size:13px;margin-top:10px;min-height:1em}
+.login .btn{width:100%;margin-top:14px;padding:10px;font-size:15px}
+.moi{color:#cbd5e1;font-size:12.5px;display:flex;gap:10px;align-items:center}
+.moi a{color:#fff;text-decoration:underline;cursor:pointer}
 #loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:100;font-size:15px;color:var(--muted);text-align:center;padding:20px}
 @media (max-width:760px){.sync{display:block;position:fixed;bottom:10px;right:10px;background:var(--brand);padding:4px 10px;border-radius:999px;z-index:40;font-size:12px;margin:0}}
 </style>
@@ -276,6 +284,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
     <button data-tab="reglages">Réglages</button>
   </nav>
   <div class="sync" id="sync">Chargement…</div>
+  <div class="moi" id="moi"></div>
 </header>
 
 <main>
@@ -375,10 +384,20 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
         <button class="btn" id="addFer" style="margin-top:10px">+ Ajouter un jour férié</button>
       </div>
       <div class="card wide">
+        <h3>Comptes</h3>
+        <div class="sub">Chaque chef se connecte avec son identifiant et son mot de passe : pas besoin de compte Google ni de partager le Google Sheet. L'<b>administrateur</b> gère les comptes et les Réglages ; un <b>chef</b> utilise le planning, le récap, les modèles et l'import. Les mots de passe ne sont jamais enregistrés en clair.</div>
+        <div style="overflow-x:auto"><table class="t" id="accTable"><tbody><tr><td class="hint">Chargement…</td></tr></tbody></table></div>
+        <div class="dates" style="margin-top:10px;flex-wrap:wrap;gap:6px">
+          <input type="text" id="accId" placeholder="identifiant" style="width:130px"><input type="text" id="accNom" placeholder="nom affiché" style="width:170px">
+          <select id="accRole"><option value="chef">Chef</option><option value="admin">Administrateur</option></select>
+          <input type="text" id="accMdp" placeholder="mot de passe (8+ caractères)" style="width:200px" autocomplete="off">
+          <button class="btn" id="accAdd">+ Créer le compte</button></div>
+      </div>
+      <div class="card wide">
         <h3>Base de données Google Sheet</h3>
         <div class="sub">Toutes les données sont enregistrées dans le Google Sheet « Heures Service Neige – Base de données », un onglet par sujet. Les onglets manquants sont créés automatiquement.</div>
         <div id="sheetInfo"></div>
-        <div class="tabs-list"><span>Salariés</span><span>Stations</span><span>Types</span><span>Règles</span><span>Créneaux</span><span>Fériés</span><span>Journal des modifications</span></div>
+        <div class="tabs-list"><span>Salariés</span><span>Stations</span><span>Types</span><span>Règles</span><span>Créneaux</span><span>Fériés</span><span>Modèles</span><span>Périodes</span><span>Comptes</span><span>Journal des modifications</span></div>
       </div>
     </div>
   </section>
@@ -512,13 +531,72 @@ function slotFromServer(c) {
 const slotToServer = (s, w) => ({ id: s.id, emp: s.emp, type: s.type, version: s.version === 'reel' ? 'reel' : 'prevu', debut: dtStr(w, s.start), fin: dtStr(w, s.end), pause: s.pause == null ? null : s.pause });
 function setSync(kind, msg) { const el = $('#sync'); el.className = 'sync ' + kind; el.textContent = msg; }
 
+/* Connexion (identifiant + mot de passe de l'application) */
+function lireJeton() { try { return localStorage.getItem('hsn_jeton') || sessionStorage.getItem('hsn_jeton') || ''; } catch (e) { return state.jetonMemoire || ''; } }
+function ecrireJeton(j, rester) {
+  state.jetonMemoire = j;
+  try { localStorage.removeItem('hsn_jeton'); sessionStorage.removeItem('hsn_jeton'); if (j) (rester ? localStorage : sessionStorage).setItem('hsn_jeton', j); } catch (e) { /* navigation privée : gardé en mémoire */ }
+}
+const estSession = err => /SESSION/.test(String(err && err.message || err));
+function afficherConnexion(msg) {
+  $('#loading').style.display = 'flex';
+  $('#loadingMsg').innerHTML = `<form class="login" id="loginForm" autocomplete="on">
+    <h2>❄ Heures Service Neige</h2><div class="hint">${esc(msg || 'Connectez-vous pour ouvrir le planning.')}</div>
+    <label for="lgId">Identifiant</label><input type="text" id="lgId" autocomplete="username" autocapitalize="none" spellcheck="false">
+    <label for="lgMdp">Mot de passe</label><input type="password" id="lgMdp" autocomplete="current-password">
+    <label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" id="lgReste" checked> Rester connecté sur cet appareil (30 jours)</label>
+    <div class="err" id="lgErr"></div>
+    <button class="btn primary" type="submit" id="lgOk">Se connecter</button></form>`;
+  $('#lgId').focus();
+  $('#loginForm').onsubmit = ev => {
+    ev.preventDefault();
+    const id = $('#lgId').value.trim(), mdp = $('#lgMdp').value, rester = $('#lgReste').checked;
+    if (!id || !mdp) { $('#lgErr').textContent = 'Saisissez votre identifiant et votre mot de passe.'; return; }
+    $('#lgOk').disabled = true; $('#lgErr').textContent = '';
+    google.script.run.withSuccessHandler(r => {
+      ecrireJeton(r.jeton, rester); state.user = r.utilisateur;
+      if (pending.ups.size || pending.dels.size || settingsPending) { flushSlots(); if (settingsPending) flushSettings(); waitThenReload(); }
+      else init();
+    }).withFailureHandler(err => { $('#lgOk').disabled = false; $('#lgErr').textContent = String(err && err.message || err).replace(/^Error:\s*/, ''); }).connexion(id, mdp, rester);
+  };
+}
+function seDeconnecter() {
+  const j = lireJeton(); ecrireJeton('');
+  if (j) google.script.run.withSuccessHandler(() => {}).withFailureHandler(() => {}).deconnexion(j);
+  afficherConnexion('Vous êtes déconnecté.');
+}
+function ouvrirMotDePasse() {
+  $('#mbox').className = 'mbox';
+  $('#mbox').innerHTML = `<div class="mh"><span>🔑 Changer mon mot de passe</span><button class="icon" id="pwX">✕</button></div>
+    <div class="mb"><label class="l">Mot de passe actuel</label><input type="password" id="pwA" style="width:100%" autocomplete="current-password">
+      <label class="l">Nouveau mot de passe (au moins 8 caractères)</label><input type="password" id="pwN" style="width:100%" autocomplete="new-password">
+      <label class="l">Confirmer le nouveau mot de passe</label><input type="password" id="pwC" style="width:100%" autocomplete="new-password"></div>
+    <div class="mf"><button class="btn" id="pwAnn">Annuler</button><button class="btn primary" id="pwOk">Enregistrer</button></div>`;
+  $('#modal').classList.add('on');
+  $('#pwX').onclick = $('#pwAnn').onclick = fermerModele;
+  $('#pwOk').onclick = () => {
+    if ($('#pwN').value !== $('#pwC').value) return toast('Les deux nouveaux mots de passe ne sont pas identiques.');
+    google.script.run.withSuccessHandler(() => { fermerModele(); toast('Mot de passe changé.'); })
+      .withFailureHandler(err => toast(String(err && err.message || err).replace(/^Error:\s*/, ''))).changerMonMotDePasse(lireJeton(), $('#pwA').value, $('#pwN').value);
+  };
+}
+function renderMoi() {
+  const u = state.user;
+  $('#moi').innerHTML = u ? `<span>👤 ${esc(u.nom)}${u.role === 'admin' ? ' (admin)' : ''}</span><a id="moiMdp" title="Changer mon mot de passe">🔑</a><a id="moiOut">Se déconnecter</a>` : '';
+  if (u) { $('#moiMdp').onclick = ouvrirMotDePasse; $('#moiOut').onclick = seDeconnecter; }
+  const admin = u && u.role === 'admin';
+  document.querySelector('nav.tabs button[data-tab="reglages"]').style.display = admin ? '' : 'none';
+  if (!admin && $('#v-reglages').classList.contains('on')) showTab('planning');
+}
 function init() {
   $('#loading').style.display = 'flex';
   $('#loadingMsg').textContent = 'Chargement du planning…';
   if (!hasServer) { $('#loadingMsg').textContent = 'Cette page doit être ouverte depuis son adresse Google Apps Script.'; return; }
+  if (!lireJeton()) return afficherConnexion();
   google.script.run.withSuccessHandler(onData).withFailureHandler(err => {
+    if (estSession(err)) { ecrireJeton(''); return afficherConnexion(String(err.message || err).replace(/^Error:\s*/, '').replace(/^SESSION\s*:\s*/, '')); }
     $('#loadingMsg').innerHTML = 'Impossible de charger les données :<br>' + esc(String(err && err.message || err).replace(/^Error:\s*/, '')) + '<br><br><button class="btn" onclick="init()">Réessayer</button>';
-  }).chargerDonnees();
+  }).chargerDonnees(lireJeton());
 }
 function onData(d) {
   state.stations = d.stations.length ? d.stations : ['Superbagnères', 'Le Mourtis', "Bourg d'Oueil"];
@@ -540,7 +618,7 @@ function onData(d) {
   d.creneaux.forEach(slotFromServer);
   TODAY = { w: weekOffsetOf(today), d: (today.getDay() + 6) % 7 };
   state.week = TODAY.w; state.mday = TODAY.d;
-  state.sheetUrl = d.sheetUrl; state.user = d.utilisateur;
+  state.sheetUrl = d.sheetUrl; state.user = d.utilisateur; renderMoi();
   if (state.tool !== 'gomme' && !state.types.some(t => t.id === state.tool)) state.tool = 'travail_jour';
   $('#loading').style.display = 'none';
   setSync('ok', '✓ Enregistré');
@@ -564,11 +642,12 @@ function flushSlots() {
       saving = false;
       ups.forEach(u => { if (!pending.ups.has(u.s.id) && !pending.dels.has(u.s.id)) pending.ups.set(u.s.id, u); });
       dels.forEach(id => { if (!pending.ups.has(id)) pending.dels.add(id); });
+      if (estSession(err)) { setSync('err', '⚠ Reconnectez-vous pour enregistrer'); return afficherConnexion('Votre connexion a expiré : reconnectez-vous, vos modifications seront enregistrées ensuite.'); }
       setSync('err', '⚠ Non enregistré — nouvel essai…');
       toast('Enregistrement impossible : ' + (err && err.message || err));
       clearTimeout(saveTimer); saveTimer = setTimeout(flushSlots, 5000);
     })
-    .enregistrerCreneaux({ upserts: ups.map(u => slotToServer(u.s, u.w)), deletes: dels });
+    .enregistrerCreneaux(lireJeton(), { upserts: ups.map(u => slotToServer(u.s, u.w)), deletes: dels });
 }
 function afterSave() {
   if (pending.ups.size || pending.dels.size) return flushSlots();
@@ -593,11 +672,13 @@ function flushSettings() {
     })
     .withFailureHandler(err => {
       savingSettings = false; settingsPending = true;
+      if (estSession(err)) { setSync('err', '⚠ Reconnectez-vous pour enregistrer'); return afficherConnexion('Votre connexion a expiré : reconnectez-vous, vos modifications seront enregistrées ensuite.'); }
+      if (/administrateur/.test(String(err && err.message || err))) { settingsPending = false; setSync('err', '⚠ Réservé à l\'administrateur'); return toast('Seul l\'administrateur peut modifier les réglages.'); }
       setSync('err', '⚠ Réglages non enregistrés — nouvel essai…');
       toast('Enregistrement des réglages impossible : ' + (err && err.message || err));
       settingsTimer = setTimeout(flushSettings, 5000);
     })
-    .enregistrerReglages({ emps: state.emps, stations: state.stations, types: state.types,
+    .enregistrerReglages(lireJeton(), { emps: state.emps, stations: state.stations, types: state.types,
       rules: { ...state.rules, pasGlisser: state.step }, feries: state.feries, modeles: state.modeles, periodes: state.periodes });
 }
 function waitThenReload() { if (saving || pending.ups.size || pending.dels.size) return setTimeout(waitThenReload, 300); init(); }
@@ -1139,7 +1220,7 @@ function renderPeriodes() {
 }
 function renderSettings() {
   renderModeles(); renderPeriodes();
-  $('#sheetInfo').innerHTML = state.sheetUrl ? `<a href="${esc(state.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a> <span class="hint">· connecté : ${esc(state.user || '—')}</span>` : '';
+  $('#sheetInfo').innerHTML = state.sheetUrl ? `<a href="${esc(state.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a> <span class="hint">· connecté : ${esc(state.user ? state.user.nom : '—')}</span>` : '';
   $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Objectif annuel (h)</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
     state.emps.map(e => `<tr data-e="${e.id}"><td><input type="text" data-f="prenom" value="${esc(e.prenom)}"></td><td><input type="text" data-f="nom" value="${esc(e.nom)}"></td>
       <td><select data-f="station">${state.stations.map(s => `<option ${s === e.station ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></td>
@@ -1341,7 +1422,7 @@ function ouvrirModele() {
       <label class="l">Horaires de chaque jour <span class="hint">(modifiables avant d'appliquer : 08:00-18:00, une abréviation comme RH, CP, JF… ou vide)</span></label>
       <div class="jrs" id="mJrs"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12.5px"><span>Total : <b id="mTot"></b> par semaine complète</span>
-        <label style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="mSave"> Enregistrer ces horaires dans le modèle</label></div>
+        <label style="display:${state.user && state.user.role === 'admin' ? 'flex' : 'none'};gap:5px;align-items:center"><input type="checkbox" id="mSave"> Enregistrer ces horaires dans le modèle</label></div>
       <label class="l">Période (jj/mm/aaaa)</label>
       <div class="dates">du <input type="text" id="mDu" value="${fd(lundi)}"> au <input type="text" id="mAu" value="${fd(dimanche)}">
         <button class="btn sm" id="mSem">Cette semaine</button><button class="btn sm" id="mSaison">Jusqu'à fin de saison</button></div>
@@ -1580,7 +1661,7 @@ function ouvrirImport() {
     $('#iApercu').innerHTML = '<span class="hint">Lecture du fichier…</span>'; $('#iOk').disabled = true;
     try {
       importData = /\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? analyserPdf(await lirePdf(f)) : analyserCsv(lireCsv(await f.text()));
-      importData.lignes.forEach(L => { const e = trouverSalarie(L.nom); L.cible = e ? e.id : '__creer'; });
+      importData.lignes.forEach(L => { const e = trouverSalarie(L.nom); L.cible = e ? e.id : (state.user && state.user.role === 'admin' ? '__creer' : '__ignorer'); });
       if (importData.version) { $('#iVer').value = importData.version; $('#iVerNote').textContent = '(le PDF indique « ' + (importData.version === 'reel' ? 'réel' : 'prévisionnel') + ' »)'; } else $('#iVerNote').textContent = '';
       afficherImport();
     } catch (e) { importData = null; $('#iApercu').innerHTML = `<div class="apercu" style="color:var(--neg)">⚠ ${esc(e.message || e)}</div>`; }
@@ -1611,7 +1692,8 @@ function afficherImport() {
   const remp = $('#iRemp').checked;
   const dates = [...new Set(importData.lignes.flatMap(L => Object.keys(L.jours)))].sort();
   let ok = 0, bad = 0, plein = 0;
-  const opts = L => `<option value="__creer" ${L.cible === '__creer' ? 'selected' : ''}>+ créer « ${esc(L.nom)} »</option><option value="__ignorer" ${L.cible === '__ignorer' ? 'selected' : ''}>— ne pas importer —</option>`
+  const admin = state.user && state.user.role === 'admin';
+  const opts = L => (admin ? `<option value="__creer" ${L.cible === '__creer' ? 'selected' : ''}>+ créer « ${esc(L.nom)} »</option>` : '') + `<option value="__ignorer" ${L.cible === '__ignorer' ? 'selected' : ''}>— ne pas importer —</option>`
     + state.emps.map(e => `<option value="${esc(e.id)}" ${L.cible === e.id ? 'selected' : ''}>${esc(e.prenom)} ${esc(e.nom)}</option>`).join('');
   let h = '<div class="imp-wrap"><table class="imp"><thead><tr><th class="nm">Nom dans le fichier → salarié</th>' + dates.map(d => { const x = parseIso(d); return `<th>${DAYN[(x.getDay() + 6) % 7]}<br>${fdShort(x)}</th>`; }).join('') + '</tr></thead><tbody>';
   importData.lignes.forEach((L, li) => {
@@ -1652,7 +1734,51 @@ $('#modal').addEventListener('click', ev => { if (ev.target.id === 'modal') ferm
 
 /* ---------- navigation ---------- */
 function renderAll() { renderTools(); renderPlanning(); renderRecap(); renderSettings(); }
+function chargerComptes() {
+  if (!state.user || state.user.role !== 'admin') return;
+  google.script.run.withSuccessHandler(afficherComptes).withFailureHandler(err => { $('#accTable').innerHTML = `<tbody><tr><td class="det">${esc(String(err.message || err))}</td></tr></tbody>`; }).listerComptes(lireJeton());
+}
+function afficherComptes(liste) {
+  state.comptes = liste;
+  $('#accTable').innerHTML = '<thead><tr><th>Identifiant</th><th>Nom affiché</th><th>Rôle</th><th>Actif</th><th>Dernière connexion</th><th>Nouveau mot de passe</th><th></th></tr></thead><tbody>' +
+    liste.map(c => `<tr data-acc="${esc(c.id)}"><td><b>${esc(c.id)}</b>${state.user && c.id === state.user.id ? ' <span class="hint">(vous)</span>' : ''}</td>
+      <td><input type="text" data-af="nom" value="${esc(c.nom)}"></td>
+      <td><select data-af="role"><option value="chef" ${c.role === 'chef' ? 'selected' : ''}>Chef</option><option value="admin" ${c.role === 'admin' ? 'selected' : ''}>Administrateur</option></select></td>
+      <td style="text-align:center"><input type="checkbox" data-af="actif" ${c.actif ? 'checked' : ''}></td>
+      <td class="hint">${esc(c.derniere || '—')}</td>
+      <td><input type="text" data-af="mdp" placeholder="laisser vide" autocomplete="off" style="width:150px"> <button class="btn sm" data-acc-mdp="1">Définir</button></td>
+      <td>${state.user && c.id === state.user.id ? '' : `<button class="icon" data-acc-del="${esc(c.id)}" title="Supprimer">🗑</button>`}</td></tr>`).join('') + '</tbody>';
+}
+function envoyerCompte(c) {
+  google.script.run.withSuccessHandler(l => { afficherComptes(l); toast('Compte enregistré.'); })
+    .withFailureHandler(err => { toast(String(err && err.message || err).replace(/^Error:\s*/, '')); chargerComptes(); }).enregistrerCompte(lireJeton(), c);
+}
+$('#accTable').addEventListener('change', ev => {
+  const tr = ev.target.closest('tr[data-acc]'); if (!tr || ev.target.dataset.af === 'mdp') return;
+  const c = state.comptes.find(x => x.id === tr.dataset.acc);
+  envoyerCompte({ id: c.id, nom: tr.querySelector('[data-af="nom"]').value, role: tr.querySelector('[data-af="role"]').value, actif: tr.querySelector('[data-af="actif"]').checked });
+});
+$('#accTable').addEventListener('click', ev => {
+  const tr = ev.target.closest('tr[data-acc]'); if (!tr) return;
+  const c = state.comptes.find(x => x.id === tr.dataset.acc);
+  if (ev.target.dataset.accMdp) {
+    const m = tr.querySelector('[data-af="mdp"]').value;
+    if (m.length < 8) return toast('Le mot de passe doit faire au moins 8 caractères.');
+    envoyerCompte({ id: c.id, nom: c.nom, role: c.role, actif: c.actif, motDePasse: m });
+  }
+  if (ev.target.dataset.accDel) {
+    if (!confirm('Supprimer le compte « ' + c.id + ' » ? La personne ne pourra plus se connecter.')) return;
+    google.script.run.withSuccessHandler(l => { afficherComptes(l); toast('Compte supprimé.'); }).withFailureHandler(err => toast(String(err.message || err))).supprimerCompte(lireJeton(), c.id);
+  }
+});
+$('#accAdd').onclick = () => {
+  const c = { id: $('#accId').value.trim(), nom: $('#accNom').value.trim(), role: $('#accRole').value, actif: true, motDePasse: $('#accMdp').value };
+  if (!c.id || c.motDePasse.length < 8) return toast('Indiquez un identifiant et un mot de passe d\'au moins 8 caractères.');
+  if ((state.comptes || []).some(x => x.id.toLowerCase() === c.id.toLowerCase())) return toast('Cet identifiant existe déjà.');
+  envoyerCompte(c); $('#accId').value = $('#accNom').value = $('#accMdp').value = '';
+};
 function showTab(name) {
+  if (name === 'reglages') chargerComptes();
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + name));
   closePop(); renderAll(); scrollTo(0, 0);

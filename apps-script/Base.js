@@ -41,21 +41,6 @@ function messageRefus_(raison) {
     (raison ? ' [Détail technique : ' + raison + ']' : '');
 }
 
-/** Refuse un compte absent de la liste des éditeurs, quand Google permet de lire cette liste. */
-function verifierDroitModification_() {
-  const ss = ouvrirBase_();
-  const email = utilisateur_();
-  if (!email) return; // compte non communiqué par Google : les droits du Sheet s'appliquent quand même
-  let autorises;
-  try {
-    autorises = ss.getEditors().map(u => String(u.getEmail()).toLowerCase());
-    if (ss.getOwner()) autorises.push(String(ss.getOwner().getEmail()).toLowerCase());
-  } catch (e) {
-    return; // liste illisible pour ce compte : on laisse les droits du Sheet décider (un lecteur ne pourra pas enregistrer)
-  }
-  if (autorises.indexOf(email.toLowerCase()) === -1) throw new Error(messageRefus_("ce compte n'est pas dans la liste des éditeurs du Google Sheet"));
-}
-
 /** Ne fait rien si la base est déjà à jour (rapide). */
 function verifierBaseSiBesoin_() {
   const props = PropertiesService.getScriptProperties();

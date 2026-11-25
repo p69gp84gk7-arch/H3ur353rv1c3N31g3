@@ -91,16 +91,28 @@ L'**adresse du planning** est affichée dans le résumé du robot « Déployer v
 
 ---
 
-## Donner l'accès au planning à un autre chef de service
+## Comptes et accès au planning
 
-Le planning est réservé aux personnes qui peuvent **modifier** le Google Sheet.
+Le planning ne demande **pas** de compte Google et le Google Sheet n'a **pas** besoin d'être partagé :
+chaque chef se connecte avec un **identifiant et un mot de passe** propres à l'application.
 
+### Première fois : créer le compte administrateur
 1. Ouvrez le Google Sheet « Heures Service Neige – Base de données ».
-2. Bouton **Partager** (en haut à droite) → saisissez l'adresse Gmail du chef → rôle **Éditeur** → **Envoyer**.
-3. Envoyez-lui l'adresse du planning (celle de votre favori).
-4. À sa première ouverture, Google lui demande une autorisation :
-   « Paramètres avancés » → « Accéder à Heures Service Neige » → « Autoriser ».
+2. Menu **Heures Service Neige › Créer / réinitialiser le compte administrateur**
+   (Google peut demander une autorisation la première fois).
+3. Saisissez un identifiant, un nom affiché et un mot de passe (8 caractères minimum).
+4. Ouvrez l'adresse du planning et connectez-vous.
 
-Pour retirer l'accès : **Partager** → à côté de son nom → **Supprimer l'accès**.
-Une personne qui n'a pas le droit de modifier voit le message « Accès refusé » avec ces explications.
+Ce menu sert aussi si vous oubliez votre mot de passe administrateur.
+
+### Ajouter un chef
+**Réglages › Comptes** : identifiant, nom, rôle « Chef », mot de passe → **Créer le compte**.
+Donnez-lui l'adresse du planning, son identifiant et son mot de passe ; il peut ensuite le changer (bouton 🔑 en haut).
+
+- **Administrateur** : tout, y compris les Réglages et les comptes.
+- **Chef** : planning, récap, modèles et import (pas les Réglages).
+
+Pour retirer l'accès : décocher « Actif » ou supprimer le compte.
+Après 5 mauvais mots de passe, un compte est bloqué 15 minutes.
+Les mots de passe ne sont jamais enregistrés en clair (seulement une empreinte chiffrée).
 Chaque modification indique qui l'a faite (colonne « Modifié par » et onglet Journal).

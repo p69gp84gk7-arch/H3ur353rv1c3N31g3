@@ -10,7 +10,7 @@ function tz_() { return Session.getScriptTimeZone() || 'Europe/Paris'; }
 function versTexte_(v, motif) { return v instanceof Date ? Utilities.formatDate(v, tz_(), motif) : String(v == null ? '' : v); }
 function versDate_(texte, motif) { return Utilities.parseDate(texte, tz_(), motif); }
 function vrai_(v) { return v === true || /^(true|vrai|oui|1)$/i.test(String(v).trim()); }
-function utilisateur_() { try { return Session.getActiveUser().getEmail() || ''; } catch (e) { return ''; } }
+function utilisateur_() { if (UTILISATEUR_COURANT) return UTILISATEUR_COURANT; try { return Session.getActiveUser().getEmail() || ''; } catch (e) { return ''; } }
 /** Empêche qu'un texte saisi soit pris pour une formule par le Sheet. */
 function texteSur_(v) { return typeof v === 'string' && /^[=+\-@]/.test(v) ? "'" + v : v; }
 
@@ -46,9 +46,9 @@ function avecVerrou_(fn) {
 
 /* ===================== Lecture ===================== */
 
-function chargerDonnees() {
-  verifierDroitModification_();
+function chargerDonnees(jeton) {
   verifierBaseSiBesoin_();
+  const moi = session_(jeton);
   const ss = ouvrirBase_();
   const emps = lireTable_('Salariés').filter(r => r['ID'] !== '').map(r => ({
     id: String(r['ID']), prenom: String(r['Prénom']), nom: String(r['Nom']), station: String(r['Station']),
@@ -89,7 +89,7 @@ function chargerDonnees() {
   }));
   return {
     emps, stations, types, rules, feries, creneaux, modeles, periodes,
-    utilisateur: utilisateur_(), sheetUrl: ss.getUrl(), aujourdhui: versTexte_(new Date(), 'yyyy-MM-dd'),
+    utilisateur: moi, sheetUrl: moi.role === 'admin' ? ss.getUrl() : '', aujourdhui: versTexte_(new Date(), 'yyyy-MM-dd'),
   };
 }
 
@@ -98,7 +98,8 @@ function chargerDonnees() {
 const RE_DT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 /** changements = { upserts: [{id, emp, type, debut, fin, pause}], deletes: [id] } */
-function enregistrerCreneaux(changements) {
+function enregistrerCreneaux(jeton, changements) {
+  session_(jeton);
   const ups = (changements && changements.upserts) || [], dels = (changements && changements.deletes) || [];
   ups.forEach(c => {
     if (!c || !c.id || !c.emp || !c.type || !RE_DT.test(c.debut) || !RE_DT.test(c.fin)) throw new Error('Créneau invalide : ' + JSON.stringify(c));
@@ -130,7 +131,8 @@ function enregistrerCreneaux(changements) {
 
 /* ===================== Enregistrement des réglages ===================== */
 
-function enregistrerReglages(r) {
+function enregistrerReglages(jeton, r) {
+  session_(jeton, true); // réservé à l'administrateur
   return avecVerrou_(() => {
     const maintenant = new Date();
     // Salariés (on garde la date de création)

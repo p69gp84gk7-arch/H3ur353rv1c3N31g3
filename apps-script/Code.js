@@ -7,6 +7,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Heures Service Neige')
     .addItem('Vérifier / mettre à jour la base', 'menuMettreAJour')
+    .addItem('Créer / réinitialiser le compte administrateur', 'creerAdministrateurDepuisMenu')
     .addToUi();
   try { verifierBaseSiBesoin_(); } catch (e) { console.warn(e); }
 }
