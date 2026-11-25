@@ -21,3 +21,5 @@ jobs:
           done
       - name: Fichier de configuration Apps Script
         run: node -e "JSON.parse(require('fs').readFileSync('apps-script/appsscript.json','utf8')); console.log('appsscript.json OK')"
+      - name: Page HTML (code toujours valide une fois les commentaires retirés par Google)
+        run: node .github/scripts/verifier-page.js
