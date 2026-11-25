@@ -1,7 +1,5 @@
 /**
- * Point d'entrée.
- * Étape actuelle : socle technique (base de données + mise à jour automatique).
- * L'interface de planning sera ajoutée quand la maquette sera validée.
+ * Point d'entrée : menu du Google Sheet et page web du planning.
  */
 
 /** Menu dans le Google Sheet. */
@@ -20,16 +18,10 @@ function menuMettreAJour() {
     : 'La base est déjà à jour.');
 }
 
-/** Page web (pour l'instant : état de la base). */
+/** Page web du planning (ordinateur et smartphone). */
 function doGet() {
   verifierBaseSiBesoin_();
-  const ss = ouvrirBase_();
-  const onglets = ss.getSheets().map(s => s.getName() + ' (' + Math.max(0, s.getLastRow() - 1) + ' ligne(s))');
-  const html = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<div style="font:15px system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 16px">' +
-    '<h2 style="color:#0f2a4a">❄ Heures Service Neige</h2>' +
-    '<p>Le programme fonctionne et la base de données est prête (version ' + CONFIG.SCHEMA_VERSION + ').</p>' +
-    '<ul><li>' + onglets.join('</li><li>') + '</li></ul>' +
-    '<p style="color:#6b7280">Le planning sera ajouté ici après validation de la maquette.</p></div>';
-  return HtmlService.createHtmlOutput(html).setTitle('Heures Service Neige');
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Heures Service Neige')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
