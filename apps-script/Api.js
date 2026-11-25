@@ -53,6 +53,8 @@ function chargerDonnees() {
   const emps = lireTable_('Salariés').filter(r => r['ID'] !== '').map(r => ({
     id: String(r['ID']), prenom: String(r['Prénom']), nom: String(r['Nom']), station: String(r['Station']),
     poste: String(r['Poste']), nuit: vrai_(r['Travailleur de nuit']), actif: vrai_(r['Actif']),
+    contrat: /^sais/i.test(String(r['Contrat'] || '')) ? 'saisonnier' : 'permanent',
+    embauche: r["Date d'embauche"] instanceof Date ? versTexte_(r["Date d'embauche"], 'dd/MM/yyyy') : '',
   }));
   const stations = lireTable_('Stations').sort((a, b) => (Number(a['Ordre']) || 0) - (Number(b['Ordre']) || 0)).map(r => String(r['Nom']));
   const types = lireTable_('Types').map(r => ({
@@ -125,6 +127,8 @@ function enregistrerReglages(r) {
     ecrireTable_('Salariés', (r.emps || []).map(e => ({
       'ID': String(e.id), 'Prénom': e.prenom, 'Nom': e.nom, 'Station': e.station, 'Poste': e.poste,
       'Travailleur de nuit': !!e.nuit, 'Actif': !!e.actif,
+      'Contrat': e.contrat === 'saisonnier' ? 'Saisonnier' : 'Permanent',
+      "Date d'embauche": e.contrat === 'saisonnier' && e.embauche ? texteVersDate_(e.embauche) : '',
       'Créé le': anciens[String(e.id)] || maintenant, 'Modifié le': maintenant,
     })));
     ecrireTable_('Stations', (r.stations || []).map((s, i) => ({ 'Nom': s, 'Ordre': i + 1 })));
