@@ -36,8 +36,13 @@ Cette clé permet au robot d'envoyer le code. **Ne la collez jamais dans la conv
 
 3. Un lien s'affiche : ouvrez-le, choisissez votre compte Google, cliquez sur **Autoriser**.
 4. Le navigateur affiche ensuite une page d'erreur dont l'adresse commence par
-   `http://localhost:8888/...`. **C'est normal.** Copiez toute l'adresse de cette page
-   et collez-la dans Cloud Shell, puis Entrée. Le message « Logged in » apparaît.
+   `http://localhost:8888/?code=...`. **C'est normal.** Dans la barre d'adresse, copiez
+   **seulement le morceau entre `code=` et `&scope`** (il commence par `4/0A...` ;
+   si vous voyez `4%2F0A...`, remplacez `%2F` par `/`).
+   Collez-le dans Cloud Shell après « Enter the code from that page here », puis Entrée.
+   Le message « Logged in » apparaît.
+   *Ce code expire en quelques minutes : en cas d'erreur, relancez la commande du point 2.
+   Ne le communiquez à personne.*
 5. Affichez la clé avec :
 
    ```bash
