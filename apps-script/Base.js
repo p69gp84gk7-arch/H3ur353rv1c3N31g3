@@ -14,6 +14,10 @@ function texteVersDate_(v) {
 }
 
 function ouvrirBase_() {
+  // Le programme est rattaché au Sheet : on l'utilise directement (marche aussi à l'ouverture
+  // du Sheet, où Google refuse openById tant que l'autorisation n'a pas été donnée).
+  const actif = SpreadsheetApp.getActiveSpreadsheet();
+  if (actif && actif.getId() === CONFIG.SHEET_ID) return actif;
   return SpreadsheetApp.openById(CONFIG.SHEET_ID);
 }
 
