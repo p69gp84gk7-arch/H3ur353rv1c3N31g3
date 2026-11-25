@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1XxH6M-GFu4T4znMcR0zhkvmvTTeoTQzN6MFwVMWgBFA',
   // À augmenter à chaque changement de la structure ci-dessous :
   // le programme ajoute alors lui-même les onglets / colonnes manquants.
-  SCHEMA_VERSION: 4,
+  SCHEMA_VERSION: 5,
 };
 
 /**
@@ -37,18 +37,19 @@ const SCHEMA = [
       { key: 'ID' }, { key: 'Nom' }, { key: 'Couleur' }, { key: 'Saisie' },
       { key: 'Compte dans les 35h' }, { key: 'Forfait par jour (h)' },
       { key: 'Temps de travail effectif' }, { key: 'Puise dans le solde' },
+      { key: 'Abréviations' }, // v5 : codes reconnus dans les modèles et les imports (séparés par des virgules)
     ],
     defaults: [
-      ['travail_jour', 'Travail', '#2f6fdb', 'Horaires', true, 0, true, false],
-      ['travail_nuit', 'Travail de nuit (auto)', '#33287f', 'Horaires', true, 0, true, false],
-      ['formation', 'Formation', '#0f8a7e', 'Horaires', true, 0, true, false],
-      ['astreinte', 'Astreinte', '#c2410c', 'Horaires', false, 0, false, false],
-      ['repos_hebdo', 'Repos hebdo', '#64748b', 'Journée entière', false, 0, false, false],
-      ['ferie', 'Férié chômé', '#be123c', 'Journée entière', true, 7, false, false],
-      ['conges', 'Congés payés', '#a16207', 'Journée entière', true, 7, false, false],
-      ['recup', 'Récupération', '#7e3fbf', 'Journée entière', true, 7, false, true],
-      ['maladie', 'Maladie / absence', '#57534e', 'Journée entière', true, 7, false, false],
-      ['soli', 'Journée de solidarité', '#60a5fa', 'Journée entière', true, 7, false, false], // v3
+      ['travail_jour', 'Travail', '#2f6fdb', 'Horaires', true, 0, true, false, ''],
+      ['travail_nuit', 'Travail de nuit (auto)', '#33287f', 'Horaires', true, 0, true, false, ''],
+      ['formation', 'Formation', '#0f8a7e', 'Horaires', true, 0, true, false, 'FORM, FORMATION'],
+      ['astreinte', 'Astreinte', '#c2410c', 'Horaires', false, 0, false, false, 'AST, ASTREINTE'],
+      ['repos_hebdo', 'Repos hebdo', '#64748b', 'Journée entière', false, 0, false, false, 'RH, REPOS'],
+      ['ferie', 'Férié chômé', '#be123c', 'Journée entière', true, 7, false, false, 'JF, FERIE'],
+      ['conges', 'Congés payés', '#a16207', 'Journée entière', true, 7, false, false, 'CP, CA, CONGES'],
+      ['recup', 'Récupération', '#7e3fbf', 'Journée entière', true, 7, false, true, 'REC, RECUP'],
+      ['maladie', 'Maladie / absence', '#57534e', 'Journée entière', true, 7, false, false, 'MAL, MALADIE, ABSENCE'],
+      ['soli', 'Journée de solidarité', '#60a5fa', 'Journée entière', true, 7, false, false, 'SOLI, SOLIDARITE'], // v3
     ],
   },
   {
