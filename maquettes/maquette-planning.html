@@ -8,154 +8,201 @@
 :root{
   --bg:#f3f5f8; --panel:#fff; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --line2:#cfd5dd;
   --brand:#0f2a4a; --accent:#2563eb;
-  --night:rgba(40,52,120,.09); --we:rgba(15,42,74,.035); --fer:rgba(190,18,60,.06);
+  --night:rgba(40,52,120,.09); --we:rgba(15,42,74,.035); --fer:rgba(190,18,60,.07);
   --ok:#166534; --okbg:#dcfce7; --pos:#9a3412; --posbg:#ffedd5; --neg:#b91c1c; --negbg:#fee2e2;
 }
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
-header{display:flex;align-items:center;gap:22px;padding:10px 20px;background:var(--brand);color:#fff;flex-wrap:wrap}
+header{display:flex;align-items:center;gap:22px;padding:9px 20px;background:var(--brand);color:#fff;flex-wrap:wrap}
 header h1{font-size:17px;margin:0;font-weight:650}
 nav.tabs{display:flex;gap:4px}
-nav.tabs button{background:transparent;border:0;color:#cbd5e1;font:inherit;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer}
+nav.tabs button{background:transparent;border:0;color:#cbd5e1;font:inherit;font-weight:600;padding:7px 15px;border-radius:8px;cursor:pointer}
 nav.tabs button.on{background:#fff;color:var(--brand)}
 .sync{margin-left:auto;font-size:12.5px;color:#fde68a}
-main{padding:16px 20px 60px;max-width:1700px;margin:0 auto}
+main{padding:14px 20px 60px;max-width:1700px;margin:0 auto}
 .view{display:none}.view.on{display:block}
-.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
-.btn{border:1px solid var(--line2);background:#fff;border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer;color:var(--ink)}
+.mob-only{display:none}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:10px}
+.btn{border:1px solid var(--line2);background:#fff;border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;color:var(--ink)}
 .btn:hover{background:#f3f4f6}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.danger{color:var(--neg);border-color:#f1b5b5}
-.weeklabel{font-size:16px;font-weight:650;min-width:340px;text-align:center}
+.btn.sm{padding:3px 10px;font-size:12.5px}
+.weeklabel{font-size:15.5px;font-weight:650;min-width:360px;text-align:center}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{border:1px solid var(--line2);background:#fff;border-radius:999px;padding:5px 13px;cursor:pointer;font:inherit;font-size:13px}
+.chip{border:1px solid var(--line2);background:#fff;border-radius:999px;padding:4px 12px;cursor:pointer;font:inherit;font-size:13px;white-space:nowrap}
 .chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 .spacer{flex:1}
 .summary{font-size:13px;color:var(--muted)}
 .summary b{color:var(--ink)}
-.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:6px}
-.tools .lbl{font-size:12.5px;color:var(--muted);margin-right:4px}
-.tool{display:flex;align-items:center;gap:6px;border:2px solid transparent;background:#f6f7f9;border-radius:8px;padding:5px 10px;cursor:pointer;font:inherit;font-size:13px}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-bottom:6px}
+.tools .lbl{font-size:12.5px;color:var(--muted);margin-right:4px;white-space:nowrap}
+.tool{display:flex;align-items:center;gap:6px;border:2px solid transparent;background:#f6f7f9;border-radius:8px;padding:4px 9px;cursor:pointer;font:inherit;font-size:13px;white-space:nowrap}
+.tool small{color:var(--muted);font-size:11px}
 .tool.on{border-color:var(--ink);background:#fff;font-weight:650}
 .sw{width:14px;height:14px;border-radius:4px;display:inline-block;flex:none}
 .sw.band{background:color-mix(in srgb,var(--c) 15%,#fff)!important;border:1.5px dashed var(--c)}
 .sw.hatch{background:repeating-linear-gradient(135deg,var(--c) 0 3px,color-mix(in srgb,var(--c) 55%,#fff) 3px 6px)!important}
-.help{font-size:12.5px;color:var(--muted);margin:0 0 10px 2px}
+.help{font-size:12.5px;color:var(--muted);margin:0 0 8px 2px}
 .help b{color:var(--ink)}
 
-/* --- grille planning --- */
+/* --- grille planning (ordinateur) --- */
 .gridwrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
 .grid{min-width:1180px}
-.prow{display:grid;grid-template-columns:190px 1fr 70px 84px 62px 92px;border-bottom:1px solid var(--line);align-items:stretch}
+.prow{display:grid;grid-template-columns:180px 1fr 66px 78px 58px 88px;border-bottom:1px solid var(--line);align-items:stretch}
 .prow.sel{background:#f0f6ff}
-.phead{position:sticky;top:0;background:#fafbfc;z-index:5;font-size:12px;color:var(--muted);font-weight:600}
-.pname{padding:6px 10px;border-right:1px solid var(--line2);cursor:pointer;display:flex;flex-direction:column;justify-content:center}
+.phead{position:sticky;top:0;background:#fafbfc;z-index:5;font-size:11.5px;color:var(--muted);font-weight:600}
+.pname{padding:3px 10px;border-right:1px solid var(--line2);cursor:pointer;display:flex;flex-direction:column;justify-content:center;min-width:0}
 .phead .pname{cursor:default;justify-content:flex-end}
-.pname .nm{font-weight:600;color:var(--ink)}
-.pname .meta{font-size:11.5px;color:var(--muted)}
+.pname .nm{font-weight:600;color:var(--ink);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pname .meta{font-size:11px;color:var(--muted);white-space:nowrap}
 .nb{background:#e0e7ff;color:#3730a3;border-radius:4px;padding:0 5px;font-weight:600}
 .ptrack-head{display:grid;grid-template-columns:repeat(7,1fr)}
-.dh{border-right:1px solid var(--line);padding:5px 0 0;text-align:center}
+.dh{border-right:1px solid var(--line);padding:4px 0 0;text-align:center}
 .dh.we{background:var(--we)}
 .dh.fer{background:var(--fer)}
-.dn{font-size:13px;color:var(--ink);font-weight:650}
+.dn{font-size:12.5px;color:var(--ink);font-weight:650}
 .dn span{font-weight:400;color:var(--muted)}
 .ferb{display:inline-block;margin-left:4px;background:#be123c;color:#fff;font-size:10px;border-radius:4px;padding:0 5px;vertical-align:1px}
-.ticks{position:relative;height:16px;font-size:10px;color:#9ca3af}
+.ferb.trav{background:#fff;color:#be123c;border:1px solid #be123c}
+.ticks{position:relative;height:15px;font-size:10px;color:#9ca3af}
 .ticks i{position:absolute;font-style:normal;transform:translateX(3px)}
-.sc{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-left:1px solid var(--line);font-size:12px;padding:2px}
-.sc.num{font-variant-numeric:tabular-nums;font-weight:600;font-size:13.5px}
+.sc{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-left:1px solid var(--line);font-size:11.5px;padding:2px}
+.sc.num{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px}
 .sc.muted{color:var(--muted);font-weight:500}
-.group{padding:6px 10px;background:#eef2f7;font-weight:700;font-size:12.5px;color:var(--brand);border-bottom:1px solid var(--line);letter-spacing:.3px;text-transform:uppercase}
-.track{position:relative;height:50px;cursor:crosshair;user-select:none;overflow:hidden}
-.tday{position:absolute;top:0;bottom:0;width:calc(100%/7);border-right:1px solid var(--line)}
+.group{padding:4px 10px;background:#eef2f7;font-weight:700;font-size:12px;color:var(--brand);border-bottom:1px solid var(--line);letter-spacing:.3px;text-transform:uppercase}
+.track{position:relative;height:40px;cursor:crosshair;user-select:none;-webkit-user-select:none;overflow:hidden;touch-action:pan-y}
+.tday{position:absolute;top:0;bottom:0;border-right:1px solid var(--line)}
 .tday.we{background-color:var(--we)}
 .tday.fer{background-color:var(--fer)}
-.slot{position:absolute;top:9px;bottom:9px;background:var(--c);color:#fff;border-radius:5px;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;cursor:grab;z-index:2;box-shadow:0 1px 2px rgba(0,0,0,.25)}
-.slot.band{top:3px;bottom:3px;z-index:1;background:color-mix(in srgb,var(--c) 13%,#fff);color:var(--c);border:1.5px dashed var(--c);box-shadow:none;align-items:flex-start;padding-top:1px;font-size:10px}
+.slot{position:absolute;top:6px;bottom:6px;background:var(--c);color:#fff;border-radius:5px;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;cursor:grab;z-index:2;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.slot.band{top:2px;bottom:2px;z-index:1;background:color-mix(in srgb,var(--c) 13%,#fff);color:var(--c);border:1.5px dashed var(--c);box-shadow:none;align-items:flex-start;padding-top:1px;font-size:10px}
+.slot.virt{border-style:solid;cursor:default}
 .slot.hatch{background:repeating-linear-gradient(135deg,var(--c) 0 6px,color-mix(in srgb,var(--c) 62%,#fff) 6px 12px)}
 .slot.ghost{opacity:.45;cursor:not-allowed}
-.slot.bad{outline:2px solid #dc2626;outline-offset:1px}
 .slot span{padding:0 2px;overflow:hidden;text-overflow:clip;pointer-events:none;letter-spacing:-.2px}
 .slot .h-l,.slot .h-r{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:3}
 .slot .h-l{left:0}.slot .h-r{right:0}
-.preview{position:absolute;top:9px;bottom:9px;border:2px dashed #111;background:rgba(0,0,0,.07);border-radius:6px;z-index:4;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;pointer-events:none;white-space:nowrap}
+.preview{position:absolute;top:6px;bottom:6px;border:2px dashed #111;background:rgba(0,0,0,.07);border-radius:5px;z-index:4;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;pointer-events:none;white-space:nowrap}
 .preview.err{border-color:#dc2626;background:rgba(220,38,38,.1);color:#b91c1c}
-.ecart{border-radius:999px;padding:2px 9px;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+.ecart{border-radius:999px;padding:1px 8px;font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ecart.zero{background:var(--okbg);color:var(--ok)}
 .ecart.pos{background:var(--posbg);color:var(--pos)}
 .ecart.neg{background:var(--negbg);color:var(--neg)}
-.ecart small{display:block;font-weight:500;font-size:10px}
-.ctl{border:0;border-radius:8px;padding:5px 9px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+.ctl{border:0;border-radius:8px;padding:4px 8px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .ctl.ok{background:var(--okbg);color:var(--ok)}
 .ctl.bad{background:var(--negbg);color:var(--neg)}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 2px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 2px;align-items:center}
 .legend span{display:inline-flex;align-items:center;gap:6px}
-.nightsw{width:16px;height:12px;background:var(--night);border:1px solid #c7cbe6;display:inline-block}
+.dn-sw{width:26px;height:12px;border-radius:3px;display:inline-block}
 
 /* --- détail contrôles --- */
 .detail{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .detail h3{margin:0 0 4px;font-size:15px}
-.detail .sub{color:var(--muted);font-size:12.5px;margin-bottom:10px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:10px}
 .cols{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
 table.t{border-collapse:collapse;width:100%;font-size:13px}
 table.t th{text-align:left;font-size:11.5px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line2);padding:6px 8px;white-space:nowrap}
-table.t td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
-table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
+table.t td{border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:top}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .st{font-weight:700}
 .st.ok{color:var(--ok)}.st.bad{color:var(--neg)}
 .det{font-size:12px;color:var(--neg)}
 .hint{color:var(--muted);font-size:13px}
 
-/* --- popover --- */
-.pop{position:fixed;z-index:50;background:#fff;border:1px solid var(--line2);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px;width:290px;display:none;font-size:13px}
-.pop .pt{font-weight:700;margin-bottom:8px}
+/* --- bulle de modification --- */
+.pop{position:fixed;z-index:50;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:12px;width:300px;display:none;font-size:13px}
+.pop .pt{font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between}
 .pop label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);margin-bottom:8px}
-.pop select,.pop input{font:inherit;font-size:13px;padding:5px 6px;border:1px solid var(--line2);border-radius:6px;color:var(--ink)}
-.pop .pr{display:grid;grid-template-columns:1fr 90px;gap:6px;align-items:end}
-.pop .pr label{margin-bottom:8px}
+.pop select{font:inherit;font-size:13px;padding:5px 6px;border:1px solid var(--line2);border-radius:6px;color:var(--ink);background:#fff}
+.pop .pr{display:grid;grid-template-columns:1fr 92px;gap:6px;align-items:end}
 .pop .pr > select{margin-bottom:8px}
-.pop .pdur{font-weight:600;margin:2px 0 10px}
+.pop .calc{background:#f6f7f9;border-radius:8px;padding:8px 10px;margin:2px 0 10px;font-size:12.5px;line-height:1.55}
+.pop .calc b{font-size:13.5px}
+.pop .auto{font-size:11.5px;color:#3730a3;margin:-4px 0 8px}
 .pop .pb{display:flex;justify-content:space-between}
 
 /* --- récap --- */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .kpi .k{font-size:12.5px;color:var(--muted)}
-.kpi .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi .v{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
 .kpi .v.pos{color:var(--pos)}.kpi .v.neg{color:var(--neg)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
 .card h3{margin:0 0 4px;font-size:15px}
-.card .sub{color:var(--muted);font-size:12.5px;margin-bottom:10px}
 .hm{overflow-x:auto}
-.hm table{border-collapse:separate;border-spacing:3px;font-size:12px}
-.hm th{font-weight:600;color:var(--muted);font-size:11px;padding:2px 4px;white-space:nowrap}
+.hm table{border-collapse:separate;border-spacing:2px;font-size:11px}
+.hm th{font-weight:600;color:var(--muted);font-size:10.5px;padding:2px 2px;white-space:nowrap}
 .hm th.cur{color:var(--accent)}
-.hm td.nm{white-space:nowrap;padding-right:10px;font-weight:600}
-.hm td.c{width:40px;height:28px;text-align:center;border-radius:5px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
+.hm td.nm{white-space:nowrap;padding-right:8px;font-weight:600;font-size:12px;position:sticky;left:0;background:#fff;z-index:1}
+.hm td.c{min-width:30px;height:26px;text-align:center;border-radius:4px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
 .hm td.c.cur{outline:2px solid var(--accent);outline-offset:1px}
 .hm td.c.np{background:repeating-linear-gradient(135deg,#f3f4f6 0 4px,#e9ebef 4px 8px);color:#9ca3af;font-weight:400}
+.rcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.rcard .top{display:flex;justify-content:space-between;align-items:center}
+.rcard .lines{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;font-size:12.5px;color:var(--muted);margin-top:6px}
+.rcard .lines b{color:var(--ink)}
 
 /* --- réglages --- */
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .sgrid .wide{grid-column:1 / -1}
-.card input[type=text],.card input[type=number],.card input[type=date],.card select{font:inherit;font-size:13px;padding:5px 7px;border:1px solid var(--line2);border-radius:6px;color:var(--ink);background:#fff}
+.card input[type=text],.card input[type=number],.card select{font:inherit;font-size:13px;padding:5px 7px;border:1px solid var(--line2);border-radius:6px;color:var(--ink);background:#fff;max-width:100%}
 .card input[type=number]{width:70px;text-align:right}
+.card input.date{width:120px;text-align:center}
 .card input[type=color]{width:34px;height:28px;border:1px solid var(--line2);border-radius:6px;padding:1px;background:#fff}
 .rules{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .rules h4{margin:0 0 6px;font-size:12.5px;color:var(--brand);text-transform:uppercase;letter-spacing:.3px}
+.rules h4.mt{margin-top:14px}
 .rule{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}
 .rule .u{color:var(--muted);font-size:12px;margin-left:4px}
 .icon{border:0;background:none;cursor:pointer;color:var(--muted);font-size:15px}
 .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
-.pill.warn{background:#fef3c7;color:#92400e}
+.pill.ok{background:var(--okbg);color:var(--ok)}
 .tabs-list{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .tabs-list span{background:#eef2f7;border-radius:6px;padding:3px 8px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
-.ferlist{display:flex;flex-wrap:wrap;gap:6px}
-.ferlist span{background:var(--fer);border:1px solid #f3c1cf;color:#9f1239;border-radius:6px;padding:3px 8px;font-size:12px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
 .toast.on{opacity:1}
-@media (max-width:900px){.cols,.sgrid,.rules{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}main{padding:12px 16px 40px}}
+
+/* --- smartphone --- */
+.mdays{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px}
+.mday-chip{flex:1 0 auto;border:1px solid var(--line2);background:#fff;border-radius:10px;padding:5px 8px;text-align:center;font:inherit;font-size:12px;cursor:pointer;min-width:44px;color:var(--ink)}
+.mday-chip b{display:block;font-size:15px}
+.mday-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.mday-chip.fer{border-color:#be123c}
+.mgroup{font-weight:700;font-size:12px;color:var(--brand);text-transform:uppercase;letter-spacing:.3px;margin:12px 2px 6px}
+.mcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.mcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}
+.mhead .nm{font-weight:650}
+.mhead .meta{font-size:11.5px;color:var(--muted)}
+.mstats{display:flex;align-items:center;gap:6px}
+.mstats .num{font-weight:700;font-variant-numeric:tabular-nums}
+.mtrack{margin-top:6px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mtrack .track{height:44px}
+.mtrack .ticks{border-bottom:1px solid var(--line);background:#fafbfc}
+.mfoot .btn{white-space:nowrap}
+.mfoot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:var(--muted);gap:8px}
+.mdetail{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+
+@media (max-width:760px){
+  .desk-only{display:none!important}
+  .mob-only{display:block}
+  header{padding:8px 12px;gap:10px}
+  header h1{font-size:15px}
+  nav.tabs{width:100%}
+  nav.tabs button{flex:1;padding:7px 6px}
+  .sync{display:none}
+  main{padding:10px 10px 60px}
+  .weeklabel{min-width:0;flex:1;font-size:14.5px}
+  .bar{gap:6px}
+  .tools{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .pop{left:0!important;right:0;bottom:0;top:auto!important;width:auto;border-radius:16px 16px 0 0;padding:14px 16px 20px;font-size:14px}
+  .pop select{font-size:15px;padding:8px}
+  .cols,.sgrid,.rules{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi .v{font-size:20px}
+  .card{padding:12px}
+}
 </style>
 </head>
 <body>
@@ -176,16 +223,20 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
       <button class="btn" id="prev">◀</button>
       <div class="weeklabel" id="weeklabel"></div>
       <button class="btn" id="next">▶</button>
-      <button class="btn" id="today">Cette semaine</button>
-      <div class="chips" id="stationChips"></div>
-      <div class="spacer"></div>
-      <button class="btn" id="copyPrev">Copier la semaine précédente</button>
+      <button class="btn desk-only" id="today">Cette semaine</button>
+      <div class="chips desk-only" id="stationChips"></div>
+      <select class="btn mob-only" id="stationSel" style="width:100%"></select>
+      <div class="spacer desk-only"></div>
+      <button class="btn desk-only" id="copyPrev">Copier la semaine précédente</button>
     </div>
+    <div class="mdays mob-only" id="mdays" style="display:none"></div>
     <div class="tools" id="tools"></div>
-    <p class="help"><b>1.</b> Choisissez un type ci-dessus &nbsp;·&nbsp; <b>2.</b> Glissez la souris sur la ligne d'un salarié &nbsp;·&nbsp; Cliquez sur un créneau pour le modifier, tirez ses bords pour l'allonger, déplacez-le en le faisant glisser.</p>
-    <div class="gridwrap"><div class="grid" id="grid"></div></div>
-    <div class="legend" id="legend"></div>
-    <div class="detail" id="detail"></div>
+    <p class="help desk-only"><b>1.</b> Choisissez un type &nbsp;·&nbsp; <b>2.</b> Glissez la souris sur la ligne d'un salarié &nbsp;·&nbsp; Cliquez sur un créneau pour le modifier (pause repas, horaires…), tirez ses bords pour l'allonger, faites-le glisser pour le déplacer. Les heures entre 21h et 6h passent en nuit automatiquement.</p>
+    <p class="help mob-only">Choisissez un type, puis glissez le doigt sur la barre d'un salarié, ou touchez « + Ajouter ». Touchez un créneau pour le modifier.</p>
+    <div class="gridwrap desk-only"><div class="grid" id="grid"></div></div>
+    <div class="legend desk-only" id="legend"></div>
+    <div class="detail desk-only" id="detail"></div>
+    <div class="mob-only" id="mlist"></div>
   </section>
 
   <!-- ================= RECAP ================= -->
@@ -197,8 +248,9 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
     <div class="kpis" id="kpis"></div>
     <div class="card">
       <h3>Compteur par salarié (saison)</h3>
-      <div class="sub">Chaque semaine est comparée à 35h. Les semaines pas encore planifiées ne sont pas comptées.</div>
-      <div style="overflow-x:auto"><table class="t" id="recapTable"></table></div>
+      <div class="sub">Chaque semaine est comparée à 35h. Solde = dépassements − heures manquantes − heures récupérées. Les semaines pas encore planifiées ne sont pas comptées.</div>
+      <div class="desk-only" style="overflow-x:auto"><table class="t" id="recapTable"></table></div>
+      <div class="mob-only" id="recapCards"></div>
     </div>
     <div class="card">
       <h3>Écart à 35h, semaine par semaine</h3>
@@ -223,7 +275,7 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
       </div>
       <div class="card wide">
         <h3>Types de créneaux</h3>
-        <div class="sub">« Horaires » = on dessine des heures précises. « Journée entière » = la case couvre toute la journée et compte un forfait d'heures.</div>
+        <div class="sub">« Horaires » = on dessine des heures précises. « Journée entière » = la case couvre la journée et compte un forfait d'heures. « Puise dans le solde » = ces heures sont retirées du solde d'heures supplémentaires (récupération).</div>
         <div style="overflow-x:auto"><table class="t" id="typeTable"></table></div>
         <button class="btn" id="addType" style="margin-top:10px">+ Ajouter un type</button>
       </div>
@@ -234,14 +286,20 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
         <button class="btn" id="addStation" style="margin-top:8px">+ Ajouter une station</button>
       </div>
       <div class="card">
-        <h3>Saison et calendrier</h3>
-        <div class="sub">Le récap et les cumuls portent sur cette période.</div>
+        <h3>Saison</h3>
+        <div class="sub">Le récap et les cumuls portent sur cette période. Dates au format jj/mm/aaaa.</div>
         <div id="seasonForm"></div>
       </div>
       <div class="card wide">
+        <h3>Jours fériés</h3>
+        <div class="sub">Par défaut, un jour férié est <b>travaillé</b> (saison d'hiver) : les heures faites ce jour-là sont comptées à part pour la paie. Cochez « Chômé » pour qu'il soit posé automatiquement pour tout le service (forfait 7h).</div>
+        <div style="overflow-x:auto"><table class="t" id="ferTable"></table></div>
+        <button class="btn" id="addFer" style="margin-top:10px">+ Ajouter un jour férié</button>
+      </div>
+      <div class="card wide">
         <h3>Base de données Google Sheet</h3>
-        <div class="sub">Toutes les données sont enregistrées dans un Google Sheet, un onglet par sujet. Les onglets manquants sont créés automatiquement.</div>
-        <div><span class="pill warn">Maquette : pas encore connecté</span></div>
+        <div class="sub">Toutes les données sont enregistrées dans le Google Sheet « Heures Service Neige – Base de données », un onglet par sujet. Les onglets manquants sont créés automatiquement.</div>
+        <div><span class="pill ok">Fichier créé</span> <span class="hint">· la connexion se fera dans le vrai programme</span></div>
         <div class="tabs-list"><span>Salariés</span><span>Stations</span><span>Types</span><span>Règles</span><span>Créneaux</span><span>Fériés</span><span>Journal des modifications</span></div>
       </div>
     </div>
@@ -256,29 +314,39 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
    MAQUETTE — données d'exemple, tout reste dans la page
    ========================================================= */
 const DAY = 1440, WEEK = 7 * DAY;
-const BASE = new Date(2026, 10, 30); // lundi 30 novembre 2026 = semaine "0"
+const BASE = new Date(2026, 10, 23); // lundi 23/11/2026 = semaine "0" (cette semaine)
+const TODAY_DAY = 2;                 // mercredi 25/11/2026
 const DAYN = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mq = matchMedia('(max-width: 760px)');
+const isMob = () => mq.matches;
 
 const state = {
-  week: 0, station: 'Toutes', tool: 'travail_jour', sel: 4, step: 30, slots: {},
+  week: 0, mday: TODAY_DAY, station: 'Toutes', tool: 'travail_jour', sel: 4, step: 30, slots: {},
   stations: ['Superbagnères', 'Le Mourtis', "Bourg d'Oueil"],
   rules: { legale: 35, maxSem: 48, maxMoy: 44, moyN: 12, maxJour: 10, amplitude: 13,
-           reposJour: 11, reposHebdo: 35, nuitDebut: 21, nuitFin: 6, nuitMaxPoste: 8, nuitMoy: 40 },
-  season: { start: -2, end: 18 },
-  feries: ['2026-11-01','2026-11-11','2026-12-25','2027-01-01','2027-03-29','2027-05-01','2027-05-08','2027-05-06','2027-05-17','2027-07-14','2027-08-15'],
+           reposJour: 11, reposHebdo: 35, pauseAuto: 60, pauseSeuil: 6,
+           nuitDebut: 21, nuitFin: 6, nuitMaxPoste: 8, nuitMoy: 40 },
+  season: { start: 0, end: 51 },
+  feries: [
+    { d: '2026-12-25', nom: 'Noël', chome: false }, { d: '2027-01-01', nom: "Jour de l'an", chome: false },
+    { d: '2027-03-29', nom: 'Lundi de Pâques', chome: false }, { d: '2027-05-01', nom: 'Fête du travail', chome: false },
+    { d: '2027-05-06', nom: 'Ascension', chome: false }, { d: '2027-05-08', nom: 'Victoire 1945', chome: false },
+    { d: '2027-05-17', nom: 'Lundi de Pentecôte', chome: false }, { d: '2027-07-14', nom: 'Fête nationale', chome: false },
+    { d: '2027-08-15', nom: 'Assomption', chome: false }, { d: '2027-11-01', nom: 'Toussaint', chome: false },
+    { d: '2027-11-11', nom: 'Armistice', chome: false },
+  ],
   types: [
-    { id:'travail_jour', nom:'Travail jour',      couleur:'#2f6fdb', mode:'heures', compteur:true,  effectif:true,  forfait:0 },
-    { id:'travail_nuit', nom:'Travail nuit',      couleur:'#3b2f8f', mode:'heures', compteur:true,  effectif:true,  forfait:0 },
-    { id:'formation',    nom:'Formation',         couleur:'#0f8a7e', mode:'heures', compteur:true,  effectif:true,  forfait:0 },
-    { id:'astreinte',    nom:'Astreinte',         couleur:'#c2410c', mode:'heures', compteur:false, effectif:false, forfait:0 },
-    { id:'repos_hebdo',  nom:'Repos hebdo',       couleur:'#64748b', mode:'jour',   compteur:false, effectif:false, forfait:0 },
-    { id:'ferie',        nom:'Jour férié chômé',  couleur:'#be123c', mode:'jour',   compteur:true,  effectif:false, forfait:7 },
-    { id:'conges',       nom:'Congés payés',      couleur:'#a16207', mode:'jour',   compteur:true,  effectif:false, forfait:7 },
-    { id:'recup',        nom:'Récupération',      couleur:'#7e3fbf', mode:'jour',   compteur:false, effectif:false, forfait:0 },
-    { id:'maladie',      nom:'Maladie / absence', couleur:'#57534e', mode:'jour',   compteur:true,  effectif:false, forfait:7 },
+    { id:'travail_jour', nom:'Travail',                couleur:'#2f6fdb', mode:'heures', compteur:true,  effectif:true,  forfait:0, deduit:false },
+    { id:'travail_nuit', nom:'Travail de nuit (auto)', couleur:'#33287f', mode:'heures', compteur:true,  effectif:true,  forfait:0, deduit:false },
+    { id:'formation',    nom:'Formation',              couleur:'#0f8a7e', mode:'heures', compteur:true,  effectif:true,  forfait:0, deduit:false },
+    { id:'astreinte',    nom:'Astreinte',              couleur:'#c2410c', mode:'heures', compteur:false, effectif:false, forfait:0, deduit:false },
+    { id:'repos_hebdo',  nom:'Repos hebdo',            couleur:'#64748b', mode:'jour',   compteur:false, effectif:false, forfait:0, deduit:false },
+    { id:'ferie',        nom:'Férié chômé',            couleur:'#be123c', mode:'jour',   compteur:true,  effectif:false, forfait:7, deduit:false },
+    { id:'conges',       nom:'Congés payés',           couleur:'#a16207', mode:'jour',   compteur:true,  effectif:false, forfait:7, deduit:false },
+    { id:'recup',        nom:'Récupération',           couleur:'#7e3fbf', mode:'jour',   compteur:true,  effectif:false, forfait:7, deduit:true },
+    { id:'maladie',      nom:'Maladie / absence',      couleur:'#57534e', mode:'jour',   compteur:true,  effectif:false, forfait:7, deduit:false },
   ],
   emps: [
     { id:1, nom:'Marty',    prenom:'Julien', station:'Superbagnères', poste:'Nivoculteur',  nuit:true,  actif:true },
@@ -294,72 +362,34 @@ const state = {
 };
 let uid = 1, nextEmpId = 10;
 
-/* ---------- outils dates / heures ---------- */
+/* ---------- dates (toujours jj/mm/aaaa) ---------- */
+const p2 = n => String(n).padStart(2, '0');
 function weekDate(w, d = 0) { const x = new Date(BASE); x.setDate(x.getDate() + w * 7 + d); return x; }
-function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function iso(d) { return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); }
+function fd(d) { return p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear(); }
+function fdIso(s) { const [y, m, d] = s.split('-'); return d + '/' + m + '/' + y; }
+function fdShort(d) { return p2(d.getDate()) + '/' + p2(d.getMonth() + 1); }
+function parseFd(s) { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s.trim()); if (!m) return null; const d = new Date(+m[3], +m[2] - 1, +m[1]); return d.getDate() === +m[1] && d.getMonth() === +m[2] - 1 ? d : null; }
 function isoWeek(d) { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y) / 864e5 + 1) / 7); }
-function fmtDate(d) { return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); }
-function weekOffsetOf(dateStr) { const d = new Date(dateStr + 'T00:00:00'); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); return Math.round((d - BASE) / (7 * 864e5)); }
-function ferieDays(w) { const out = []; for (let d = 0; d < 7; d++) if (state.feries.includes(iso(weekDate(w, d)))) out.push(d); return out; }
-function fmtH(min) { const neg = min < 0; min = Math.round(Math.abs(min)); const h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + h + 'h' + (m ? String(m).padStart(2, '0') : ''); }
-function hm(min, isEnd) { let t = ((min % DAY) + DAY) % DAY; if (isEnd && t === 0) return '24h'; const h = Math.floor(t / 60), m = t % 60; return h + 'h' + (m ? String(m).padStart(2, '0') : ''); }
-function hc(min, isEnd) { let t = ((min % DAY) + DAY) % DAY; if (isEnd && t === 0) t = DAY; const h = Math.floor(t / 60), m = t % 60; return h + (m ? ':' + String(m).padStart(2, '0') : ''); }
-function tv(min) { const t = ((min % DAY) + DAY) % DAY; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); }
-function dayName(w, i) { const dt = weekDate(w, i); return DAYN[((i % 7) + 7) % 7] + ' ' + dt.getDate(); }
+function weekOffsetOf(d) { d = new Date(d); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return Math.round((d - BASE) / (7 * 864e5)); }
+function ferieAt(w, d) { const k = iso(weekDate(w, d)); return state.feries.find(f => f.d === k); }
+function ferieDays(w) { const o = []; for (let d = 0; d < 7; d++) if (ferieAt(w, d)) o.push(d); return o; }
+function fmtH(min) { const neg = min < 0; min = Math.round(Math.abs(min)); const h = Math.floor(min / 60), m = min % 60; return (neg ? '−' : '') + h + 'h' + (m ? p2(m) : ''); }
+function hm(min, isEnd) { let t = ((min % DAY) + DAY) % DAY; if (isEnd && t === 0) return '24h'; return Math.floor(t / 60) + 'h' + (t % 60 ? p2(t % 60) : ''); }
+function hc(min, isEnd) { let t = ((min % DAY) + DAY) % DAY; if (isEnd && t === 0) t = DAY; return Math.floor(t / 60) + (t % 60 ? ':' + p2(t % 60) : ''); }
+function tv(min) { const t = ((min % DAY) + DAY) % DAY; return p2(Math.floor(t / 60)) + ':' + p2(t % 60); }
+function dayName(w, i) { return DAYN[((i % 7) + 7) % 7] + ' ' + fdShort(weekDate(w, i)); }
 const type = id => state.types.find(t => t.id === id) || state.types[0];
 const emp = id => state.emps.find(e => e.id === id);
+const isWork = s => s.type === 'travail_jour' || s.type === 'travail_nuit';
 
-/* ---------- données d'exemple ---------- */
-const S = (e, d, h1, h2, t) => ({ id: uid++, emp: e, type: t, start: d * DAY + Math.round(h1 * 60), end: d * DAY + Math.round(h2 * 60) });
-function hash(a, b) { let h = (a * 374761393 + b * 668265263) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; return (h ^ (h >>> 16)) % 100; }
-function genWeek(w) {
-  if (w < state.season.start || w > state.season.end || w > 3) return []; // au-delà : pas encore planifié
-  if (w === 0) return seedWeek0();
-  const out = [], fer = ferieDays(w);
-  state.emps.forEach(e => {
-    if (e.id > 9) return;
-    const r = hash(e.id, w + 50);
-    if (e.nuit) {
-      (r < 25 ? [0, 1, 2, 3] : [0, 1, 2, 3, 4]).forEach(d => out.push(fer.includes(d) ? S(e.id, d, 0, 24, 'ferie') : S(e.id, d, 22, 29, 'travail_nuit')));
-      out.push(S(e.id, 6, 0, 24, 'repos_hebdo'));
-    } else {
-      for (let d = 0; d < 5; d++) {
-        if (fer.includes(d)) out.push(S(e.id, d, 0, 24, 'ferie'));
-        else { out.push(S(e.id, d, 8, 12, 'travail_jour')); out.push(S(e.id, d, 13, 16, 'travail_jour')); }
-      }
-      out.push(r > 80 ? S(e.id, 5, 8, 12, 'travail_jour') : S(e.id, 5, 0, 24, 'repos_hebdo'));
-      out.push(S(e.id, 6, 0, 24, 'repos_hebdo'));
-    }
-  });
-  return out;
+/* ---------- pause repas et nuit automatiques ---------- */
+function pauseOf(s) {
+  const t = type(s.type); if (t.mode !== 'heures' || !t.effectif) return 0;
+  if (s.pause != null) return s.pause;
+  return (s.end - s.start) > state.rules.pauseSeuil * 60 ? state.rules.pauseAuto : 0;
 }
-function seedWeek0() {
-  const o = [];
-  const jour = (e, d, a = 8, b = 12, c = 13, f = 16) => { o.push(S(e, d, a, b, 'travail_jour')); o.push(S(e, d, c, f, 'travail_jour')); };
-  const repos = (e, ...ds) => ds.forEach(d => o.push(S(e, d, 0, 24, 'repos_hebdo')));
-  // Julien : 4 nuits de 8h + 1 nuit de 9h (alerte nuit > 8h)
-  [0, 1, 2, 3].forEach(d => o.push(S(1, d, 21, 29, 'travail_nuit'))); o.push(S(1, 4, 21, 30, 'travail_nuit')); repos(1, 6);
-  // Sophie : semaine normale + astreinte samedi
-  [0, 1, 2, 3, 4].forEach(d => jour(2, d)); o.push(S(2, 5, 8, 18, 'astreinte')); repos(2, 6);
-  // Karim : nuits du mardi au samedi
-  repos(3, 0); [1, 2, 3, 4, 5].forEach(d => o.push(S(3, d, 22, 29, 'travail_nuit')));
-  // Laura : mercredi de 11h (alerte > 10h)
-  [0, 1, 3, 4].forEach(d => jour(4, d)); jour(4, 2, 7, 12, 13, 19); repos(4, 5, 6);
-  // Thomas : 4 nuits seulement (heures manquantes)
-  [0, 1, 2, 3].forEach(d => o.push(S(5, d, 21, 29, 'travail_nuit'))); repos(5, 5, 6);
-  // Élodie : finit mardi 21h, reprend mercredi 6h (repos < 11h)
-  jour(6, 0); o.push(S(6, 1, 13, 21, 'travail_jour')); o.push(S(6, 2, 6, 13, 'travail_jour')); jour(6, 3); jour(6, 4); repos(6, 5, 6);
-  // Pierre : 2 jours de congés
-  o.push(S(7, 0, 0, 48, 'conges')); [2, 3, 4].forEach(d => jour(7, d)); repos(7, 5, 6);
-  // Marc : 49h (alerte > 48h)
-  [0, 1, 2, 3, 4].forEach(d => jour(8, d, 8, 12, 13, 17)); jour(8, 5, 8, 12, 13, 18); repos(8, 6);
-  // Nina : 3 nuits + 2 jours maladie
-  [0, 1, 2].forEach(d => o.push(S(9, d, 22, 29, 'travail_nuit'))); o.push(S(9, 3, 0, 48, 'maladie')); repos(9, 6);
-  return o;
-}
-function getSlots(w) { if (!(w in state.slots)) state.slots[w] = genWeek(w); return state.slots[w]; }
-
-/* ---------- calculs RH ---------- */
+const workMin = s => s.end - s.start - pauseOf(s);
 function nightMin(a, b) {
   const R = state.rules; let m = 0;
   for (let k = Math.floor(a / DAY) - 1; k <= Math.floor(b / DAY); k++) {
@@ -368,49 +398,103 @@ function nightMin(a, b) {
   }
   return m;
 }
-const effOf = (e, w) => getSlots(w).filter(s => s.emp === e && type(s.type).effectif).reduce((t, s) => t + s.end - s.start, 0);
-const nightPostOf = (e, w) => getSlots(w).filter(s => s.emp === e && s.type === 'travail_nuit').reduce((t, s) => t + s.end - s.start, 0);
+function nightWork(s) { return Math.max(0, nightMin(s.start, s.end) - (s.type === 'travail_nuit' ? pauseOf(s) : 0)); } // pause retirée de la nuit si poste de nuit
+function autoType(s) { if (isWork(s)) s.type = nightMin(s.start, s.end) * 2 >= (s.end - s.start) ? 'travail_nuit' : 'travail_jour'; return s; }
+function workBg(s) { // dégradé : partie jour en bleu, partie nuit en bleu nuit
+  const jc = type('travail_jour').couleur, nc = type('travail_nuit').couleur, R = state.rules, dur = s.end - s.start;
+  const parts = []; let pos = 0;
+  for (let k = Math.floor(s.start / DAY) - 1; k <= Math.floor(s.end / DAY); k++) {
+    const a = Math.max(s.start, k * DAY + R.nuitDebut * 60), b = Math.min(s.end, (k + 1) * DAY + R.nuitFin * 60);
+    if (b <= a) continue;
+    const pa = (a - s.start) / dur * 100, pb = (b - s.start) / dur * 100;
+    if (pa > pos) parts.push(`${jc} ${pos}% ${pa}%`);
+    parts.push(`${nc} ${pa}% ${pb}%`); pos = pb;
+  }
+  if (pos < 100) parts.push(`${jc} ${pos}% 100%`);
+  return `linear-gradient(to right,${parts.join(',')})`;
+}
+
+/* ---------- données d'exemple ---------- */
+const S = (e, d, h1, h2, t, pause) => autoType({ id: uid++, emp: e, type: t, start: d * DAY + Math.round(h1 * 60), end: d * DAY + Math.round(h2 * 60), pause });
+function hash(a, b) { let h = (a * 374761393 + b * 668265263) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; return (h ^ (h >>> 16)) % 100; }
+function genWeek(w) {
+  if (w < state.season.start || w > state.season.end || w > 5) return []; // au-delà : pas encore planifié
+  if (w === 0) return seedWeek0();
+  const out = [];
+  state.emps.forEach(e => {
+    if (e.id > 9) return;
+    const r = hash(e.id, w + 50);
+    if (e.nuit) {
+      (r < 25 ? [0, 1, 2, 3] : [0, 1, 2, 3, 4]).forEach(d => out.push(S(e.id, d, 21, 29, 'travail_jour')));
+      out.push(S(e.id, 6, 0, 24, 'repos_hebdo'));
+    } else {
+      for (let d = 0; d < 5; d++) out.push(d === 0 && r < 12 ? S(e.id, 0, 0, 24, 'recup') : S(e.id, d, 8, 16, 'travail_jour'));
+      out.push(r > 85 ? S(e.id, 5, 8, 12, 'travail_jour') : S(e.id, 5, 0, 24, 'repos_hebdo'));
+      out.push(S(e.id, 6, 0, 24, 'repos_hebdo'));
+    }
+  });
+  return out;
+}
+function seedWeek0() {
+  const o = [], J = (e, d, a = 8, b = 16, p) => o.push(S(e, d, a, b, 'travail_jour', p));
+  const repos = (e, ...ds) => ds.forEach(d => o.push(S(e, d, 0, 24, 'repos_hebdo')));
+  [0, 1, 2, 3].forEach(d => J(1, d, 21, 29)); J(1, 4, 21, 31); repos(1, 6);          // Julien : nuit de 9h le vendredi
+  [0, 1, 2, 3, 4].forEach(d => J(2, d)); o.push(S(2, 5, 8, 18, 'astreinte')); repos(2, 6); // Sophie : astreinte samedi
+  repos(3, 0); [1, 2, 3, 4, 5].forEach(d => J(3, d, 21, 29));                         // Karim : nuits mar → sam
+  [0, 1, 3, 4].forEach(d => J(4, d)); J(4, 2, 7, 19); repos(4, 5, 6);                   // Laura : mercredi 11h
+  [0, 1, 2, 3].forEach(d => J(5, d, 21, 29)); o.push(S(5, 4, 9, 12, 'formation')); repos(5, 5, 6); // Thomas
+  J(6, 0); J(6, 1, 13, 21); J(6, 2, 6, 13, 30); J(6, 3); J(6, 4); repos(6, 5, 6);       // Élodie : repos 9h
+  o.push(S(7, 0, 0, 48, 'conges')); [2, 3, 4].forEach(d => J(7, d)); repos(7, 5, 6);   // Pierre : congés
+  [0, 1, 2, 3, 4].forEach(d => J(8, d, 8, 17)); J(8, 5, 8, 18); repos(8, 6);           // Marc : 49h
+  [0, 1, 2].forEach(d => J(9, d, 21, 29)); o.push(S(9, 3, 0, 48, 'maladie')); repos(9, 6); // Nina : maladie
+  return o;
+}
+function getSlots(w) { if (!(w in state.slots)) state.slots[w] = genWeek(w); return state.slots[w]; }
+function empSlots(e, w) { // créneaux + fériés chômés posés automatiquement
+  const own = getSlots(w).filter(s => s.emp === e), out = own.slice();
+  for (let d = 0; d < 7; d++) {
+    const f = ferieAt(w, d);
+    const busy = own.some(s => (type(s.type).mode === 'jour' && s.start < (d + 1) * DAY && s.end > d * DAY) || (type(s.type).effectif && Math.floor(s.start / DAY) === d));
+    if (f && f.chome && !busy) // pas de forfait férié pour qui travaille ce jour-là (compté en « férié travaillé »)
+      out.push({ id: 'v' + d, emp: e, type: 'ferie', start: d * DAY, end: (d + 1) * DAY, virt: true });
+  }
+  return out;
+}
+
+/* ---------- calculs RH ---------- */
+const effOf = (e, w) => getSlots(w).filter(s => s.emp === e && type(s.type).effectif).reduce((t, s) => t + workMin(s), 0);
+const nightPostOf = (e, w) => getSlots(w).filter(s => s.emp === e && s.type === 'travail_nuit').reduce((t, s) => t + workMin(s), 0);
 function avgN(fn, e, w, n) { let sum = 0, c = 0; for (let k = w - n + 1; k <= w; k++) { if (k < state.season.start) continue; sum += fn(e, k); c++; } return c ? sum / c : 0; }
 function combined(e, w) {
   const out = [];
   for (const k of [-1, 0, 1]) for (const s of getSlots(w + k)) if (s.emp === e && type(s.type).effectif) out.push({ start: s.start + k * WEEK, end: s.end + k * WEEK });
   return out.sort((a, b) => a.start - b.start);
 }
-
 function analyze(e, w) {
-  const R = state.rules, all = getSlots(w).filter(s => s.emp === e), fer = ferieDays(w);
-  let counter = 0, eff = 0, night = 0, ferieWorked = 0, absences = 0;
+  const R = state.rules, all = empSlots(e, w), fer = ferieDays(w);
+  let counter = 0, eff = 0, night = 0, ferieWorked = 0, absences = 0, recup = 0, pauses = 0;
   const days = Array.from({ length: 7 }, () => ({ work: 0, first: null, last: null, night: 0, poste: false }));
   for (const s of all) {
     const t = type(s.type), d = s.end - s.start;
-    if (t.mode === 'jour') { if (t.compteur) { const v = t.forfait * 60 * Math.max(1, Math.round(d / DAY)); counter += v; absences += v; } continue; }
-    if (t.compteur) counter += d;
+    if (t.mode === 'jour') { if (t.compteur) { const v = t.forfait * 60 * Math.max(1, Math.round(d / DAY)); counter += v; absences += v; if (t.deduit) recup += v; } continue; }
+    const wm = workMin(s);
+    if (t.compteur) counter += wm;
     if (!t.effectif) continue;
-    eff += d;
+    eff += wm; pauses += pauseOf(s);
     const di = Math.min(6, Math.floor(s.start / DAY)), D = days[di];
-    D.work += d; D.first = D.first == null ? s.start : Math.min(D.first, s.start); D.last = D.last == null ? s.end : Math.max(D.last, s.end);
-    const nm = nightMin(s.start, s.end); D.night += nm; night += nm;
+    D.work += wm; D.first = D.first == null ? s.start : Math.min(D.first, s.start); D.last = D.last == null ? s.end : Math.max(D.last, s.end);
+    const nm = nightWork(s); D.night += nm; night += nm;
     if (s.type === 'travail_nuit') D.poste = true;
-    if (fer.includes(di)) ferieWorked += d;
+    if (fer.includes(di)) ferieWorked += wm;
   }
-  const checks = [];
-  const add = (label, val, lim, ok, details = []) => checks.push({ label, val, lim, ok, details });
-
-  add('Total de la semaine (heures supp. comprises)', fmtH(eff), '≤ ' + R.maxSem + 'h', eff <= R.maxSem * 60,
-      eff > R.maxSem * 60 ? [fmtH(eff - R.maxSem * 60) + ' de trop'] : []);
+  const checks = [], add = (label, val, lim, ok, details = []) => checks.push({ label, val, lim, ok, details });
+  add('Total de la semaine (heures supp. comprises)', fmtH(eff), '≤ ' + R.maxSem + 'h', eff <= R.maxSem * 60, eff > R.maxSem * 60 ? [fmtH(eff - R.maxSem * 60) + ' de trop'] : []);
   const avg = avgN(effOf, e, w, R.moyN);
   add('Moyenne sur ' + R.moyN + ' semaines', fmtH(avg), '≤ ' + R.maxMoy + 'h', avg <= R.maxMoy * 60);
-
   const longDays = days.map((D, i) => ({ i, ...D })).filter(D => D.work > R.maxJour * 60);
-  add('Travail sur une journée', fmtH(Math.max(...days.map(D => D.work))), '≤ ' + R.maxJour + 'h', !longDays.length,
-      longDays.map(D => dayName(w, D.i) + ' : ' + fmtH(D.work)));
-
-  const amps = days.map((D, i) => ({ i, a: D.first == null ? 0 : D.last - D.first }));
-  const longAmp = amps.filter(x => x.a > R.amplitude * 60);
-  add('Amplitude d\'une journée (début → fin)', fmtH(Math.max(...amps.map(x => x.a))), '≤ ' + R.amplitude + 'h', !longAmp.length,
-      longAmp.map(x => dayName(w, x.i) + ' : ' + fmtH(x.a)));
-
-  // repos entre 2 journées
+  add('Travail sur une journée (pauses déduites)', fmtH(Math.max(...days.map(D => D.work))), '≤ ' + R.maxJour + 'h', !longDays.length, longDays.map(D => dayName(w, D.i) + ' : ' + fmtH(D.work)));
+  const amps = days.map((D, i) => ({ i, a: D.first == null ? 0 : D.last - D.first })), longAmp = amps.filter(x => x.a > R.amplitude * 60);
+  add('Amplitude d\'une journée (début → fin)', fmtH(Math.max(...amps.map(x => x.a))), '≤ ' + R.amplitude + 'h', !longAmp.length, longAmp.map(x => dayName(w, x.i) + ' : ' + fmtH(x.a)));
   const comb = combined(e, w), groups = new Map();
   for (const s of comb) { const k = Math.floor(s.start / DAY); const g = groups.get(k) || { first: s.start, last: s.end }; g.first = Math.min(g.first, s.start); g.last = Math.max(g.last, s.end); groups.set(k, g); }
   const gs = [...groups.entries()].sort((a, b) => a[0] - b[0]).map(x => x[1]);
@@ -422,134 +506,171 @@ function analyze(e, w) {
     if (r < R.reposJour * 60) shortRest.push(dayName(w, Math.floor(gs[i].first / DAY)) + ' : ' + fmtH(r) + ' de repos avant de reprendre');
   }
   add('Repos entre 2 journées', minRest == null ? '—' : fmtH(minRest), '≥ ' + R.reposJour + 'h', !shortRest.length, shortRest);
-
-  // repos hebdomadaire : plus long repos qui touche la semaine
   let cur = -1e9, maxGap = 0;
-  const pts = [...comb, { start: 1e9, end: 1e9 }];
-  for (const s of pts) { if (s.start > cur && s.start > 0 && cur < WEEK) maxGap = Math.max(maxGap, Math.min(s.start, 1e8) - Math.max(cur, -1e8)); cur = Math.max(cur, s.end); }
+  for (const s of [...comb, { start: 1e9, end: 1e9 }]) { if (s.start > cur && s.start > 0 && cur < WEEK) maxGap = Math.max(maxGap, Math.min(s.start, 1e8) - Math.max(cur, -1e8)); cur = Math.max(cur, s.end); }
   add('Plus long repos de la semaine', maxGap > 7 * DAY ? 'plus de 7 j' : fmtH(maxGap), '≥ ' + R.reposHebdo + 'h', maxGap >= R.reposHebdo * 60);
-
-  // nuit
   const longNights = days.map((D, i) => ({ i, ...D })).filter(D => D.poste && D.work > R.nuitMaxPoste * 60);
   if (days.some(D => D.poste))
-    add('Poste de nuit', fmtH(Math.max(...days.filter(D => D.poste).map(D => D.work))), '≤ ' + R.nuitMaxPoste + 'h', !longNights.length,
-        longNights.map(D => 'Nuit du ' + dayName(w, D.i) + ' : ' + fmtH(D.work)));
-  if (emp(e) && emp(e).nuit) {
-    const an = avgN(nightPostOf, e, w, R.moyN);
-    add('Nuit : moyenne sur ' + R.moyN + ' semaines', fmtH(an), '≤ ' + R.nuitMoy + 'h', an <= R.nuitMoy * 60);
-  }
-  const alerts = checks.filter(c => !c.ok);
-  return { counter, eff, night, ferieWorked, absences, days, checks, alerts, ecart: counter - R.legale * 60 };
+    add('Poste de nuit', fmtH(Math.max(...days.filter(D => D.poste).map(D => D.work))), '≤ ' + R.nuitMaxPoste + 'h', !longNights.length, longNights.map(D => 'Nuit du ' + dayName(w, D.i) + ' : ' + fmtH(D.work)));
+  if (emp(e) && emp(e).nuit) { const an = avgN(nightPostOf, e, w, R.moyN); add('Nuit : moyenne sur ' + R.moyN + ' semaines', fmtH(an), '≤ ' + R.nuitMoy + 'h', an <= R.nuitMoy * 60); }
+  return { counter, eff, night, ferieWorked, absences, recup, pauses, days, checks, alerts: checks.filter(c => !c.ok), ecart: counter - R.legale * 60 };
 }
 
-/* ---------- rendu PLANNING ---------- */
+/* ---------- morceaux d'affichage communs ---------- */
 function visibleEmps() { return state.emps.filter(e => e.actif && (state.station === 'Toutes' || e.station === state.station)); }
-function stationChips(el) {
-  el.innerHTML = ['Toutes', ...state.stations].map(s => `<button class="chip ${state.station === s ? 'on' : ''}" data-st="${esc(s)}">${s === 'Toutes' ? 'Toutes les stations' : esc(s)}</button>`).join('');
+function stationChips(el) { el.innerHTML = ['Toutes', ...state.stations].map(s => `<button class="chip ${state.station === s ? 'on' : ''}" data-st="${esc(s)}">${s === 'Toutes' ? 'Toutes les stations' : esc(s)}</button>`).join(''); }
+function ecartHtml(ec) {
+  const R = state.rules, cls = ec === 0 ? 'zero' : ec > 0 ? 'pos' : 'neg';
+  const tip = ec === 0 ? 'Pile ' + R.legale + 'h' : ec > 0 ? fmtH(ec) + ' de dépassement (heures supplémentaires)' : fmtH(-ec) + ' manquantes';
+  return `<span class="ecart ${cls}" title="${tip}">${ec === 0 ? '0h' : (ec > 0 ? '+' : '') + fmtH(ec)}</span>`;
+}
+function ctlHtml(e, a, short) {
+  const n = a.alerts.length;
+  return `<button class="ctl ${n ? 'bad' : 'ok'}" data-ctl="${e.id}" title="${esc(a.alerts.map(x => x.label + ' : ' + x.val + ' (' + x.lim + ')').join('\n'))}">${n ? '⚠ ' + n + (short ? '' : ' alerte' + (n > 1 ? 's' : '')) : '✓' + (short ? '' : ' OK')}</button>`;
 }
 function renderTools() {
-  $('#tools').innerHTML = '<span class="lbl">Je pose :</span>' + state.types.map(t =>
-    `<button class="tool ${state.tool === t.id ? 'on' : ''}" data-tool="${t.id}"><i class="sw ${t.mode === 'jour' ? 'band' : (!t.effectif ? 'hatch' : '')}" style="--c:${t.couleur};background:${t.couleur}"></i>${esc(t.nom)}</button>`).join('')
+  $('#tools').innerHTML = '<span class="lbl">Je pose :</span>' + state.types.filter(t => t.id !== 'travail_nuit').map(t =>
+    `<button class="tool ${state.tool === t.id ? 'on' : ''}" data-tool="${t.id}"><i class="sw ${t.mode === 'jour' ? 'band' : (!t.effectif ? 'hatch' : '')}" style="--c:${t.couleur};background:${t.id === 'travail_jour' ? `linear-gradient(to right,${t.couleur} 50%,${type('travail_nuit').couleur} 50%)` : t.couleur}"></i>${esc(t.nom)}${t.id === 'travail_jour' ? ' <small>jour / nuit auto</small>' : ''}</button>`).join('')
     + `<button class="tool ${state.tool === 'gomme' ? 'on' : ''}" data-tool="gomme">🧽 Effacer</button>`;
 }
-function slotHtml(s, ghost) {
-  const t = type(s.type), band = t.mode === 'jour';
-  const L = s.start / WEEK * 100, W = (s.end - s.start) / WEEK * 100;
-  const label = band ? (t.nom + (Math.round((s.end - s.start) / DAY) > 1 ? ' (' + Math.round((s.end - s.start) / DAY) + ' j)' : '')) : hc(s.start) + '–' + hc(s.end, true);
-  const tip = `${t.nom} · ${DAYN[((Math.floor(s.start / DAY)) % 7 + 7) % 7]} ${hm(s.start)} → ${DAYN[((Math.floor((s.end - 1) / DAY)) % 7 + 7) % 7]} ${hm(s.end, true)} (${band ? Math.round((s.end - s.start) / DAY) + ' j' : fmtH(s.end - s.start)})`;
-  return `<div class="slot ${band ? 'band' : ''} ${!band && !t.effectif ? 'hatch' : ''} ${ghost ? 'ghost' : ''}" data-id="${ghost ? '' : s.id}" style="left:${L}%;width:${W}%;--c:${t.couleur}" title="${esc(tip + (ghost ? ' — commencé la semaine d\'avant' : ''))}">${ghost ? '' : '<i class="h-l"></i>'}<span>${esc(label)}</span>${ghost ? '' : '<i class="h-r"></i>'}</div>`;
+function slotHtml(s, o, span, ghost) {
+  const t = type(s.type), band = t.mode === 'jour', nd = Math.round((s.end - s.start) / DAY);
+  if (s.end <= o || s.start >= o + span) return '';
+  const L = (s.start - o) / span * 100, W = (s.end - s.start) / span * 100;
+  const label = band ? (t.nom + (nd > 1 ? ' (' + nd + ' j)' : '')) : hc(s.start) + '–' + hc(s.end, true);
+  const p = pauseOf(s), nw = isWork(s) ? nightWork(s) : 0;
+  let tip = `${t.nom} · ${DAYN[(Math.floor(s.start / DAY) % 7 + 7) % 7]} ${hm(s.start)} → ${DAYN[(Math.floor((s.end - 1) / DAY) % 7 + 7) % 7]} ${hm(s.end, true)}`;
+  tip += band ? ` (${nd} j)` : ` · présence ${fmtH(s.end - s.start)}${p ? ' − pause ' + fmtH(p) : ''} = ${fmtH(workMin(s))}${nw ? ' dont ' + fmtH(nw) + ' de nuit' : ''}`;
+  if (ghost) tip += ' — commencé la semaine d\'avant';
+  if (s.virt) tip += ' — posé automatiquement (Réglages › Jours fériés)';
+  const bg = isWork(s) ? `background:${workBg(s)};` : '';
+  const cls = `slot ${band ? 'band' : ''} ${!band && !t.effectif ? 'hatch' : ''} ${ghost ? 'ghost' : ''} ${s.virt ? 'virt' : ''}`;
+  const handles = !ghost && !s.virt;
+  return `<div class="${cls}" data-id="${handles ? s.id : ''}" style="left:${L}%;width:${W}%;--c:${t.couleur};${bg}" title="${esc(tip)}">${handles ? '<i class="h-l"></i>' : ''}<span>${esc(label)}</span>${handles ? '<i class="h-r"></i>' : ''}</div>`;
 }
+function trackHtml(e, w, o, span) {
+  const R = state.rules, nf = R.nuitFin / 24 * 100, nd = R.nuitDebut / 24 * 100, step = span === DAY ? 12.5 : 25;
+  const dayBg = `background-image:linear-gradient(to right,var(--night) 0 ${nf}%,transparent ${nf}% ${nd}%,var(--night) ${nd}%),repeating-linear-gradient(to right,transparent 0 calc(${step}% - 1px),#eef0f3 calc(${step}% - 1px) ${step}%)`;
+  let h = '';
+  for (let d = Math.floor(o / DAY); d < (o + span) / DAY; d++) {
+    const f = ferieAt(w, d);
+    h += `<div class="tday ${d >= 5 ? 'we' : ''} ${f ? 'fer' : ''}" style="left:${(d * DAY - o) / span * 100}%;width:${DAY / span * 100}%;${dayBg}"></div>`;
+  }
+  for (const s of getSlots(w - 1)) if (s.emp === e && s.end > WEEK) h += slotHtml({ ...s, start: s.start - WEEK, end: s.end - WEEK }, o, span, true);
+  for (const s of empSlots(e, w)) h += slotHtml(s, o, span);
+  if (drag && drag.kind === 'new' && drag.emp === e && drag.cand) {
+    const c = drag.cand, isN = c.type === 'travail_nuit';
+    const txt = drag.err ? 'chevauchement' : type(c.type).mode === 'jour' ? Math.round((c.end - c.start) / DAY) + ' j' : hc(c.start) + '–' + hc(c.end, true) + ' · ' + fmtH(workMin(c)) + (isN ? ' · nuit' : '');
+    h += `<div class="preview ${drag.err ? 'err' : ''}" style="left:${(c.start - o) / span * 100}%;width:${(c.end - c.start) / span * 100}%">${txt}</div>`;
+  }
+  return `<div class="track" data-emp="${e}" data-o="${o}" data-span="${span}">${h}</div>`;
+}
+
+/* ---------- PLANNING (ordinateur) ---------- */
 function renderPlanning() {
-  const w = state.week, R = state.rules, fer = ferieDays(w), d0 = weekDate(w), d6 = weekDate(w, 6);
-  $('#weeklabel').textContent = `Semaine ${isoWeek(d0)} · du ${fmtDate(d0)} au ${fmtDate(d6)} ${d6.getFullYear()}`;
+  const w = state.week, R = state.rules, d0 = weekDate(w), d6 = weekDate(w, 6);
+  $('#weeklabel').textContent = isMob() ? `S${isoWeek(d0)} · ${fdShort(d0)} → ${fd(d6)}` : `Semaine ${isoWeek(d0)} · du lun. ${fd(d0)} au dim. ${fd(d6)}`;
   stationChips($('#stationChips'));
-  const nf = R.nuitFin / 24 * 100, nd = R.nuitDebut / 24 * 100;
-  const dayBg = `background-image:linear-gradient(to right,var(--night) 0 ${nf}%,transparent ${nf}% ${nd}%,var(--night) ${nd}%),repeating-linear-gradient(to right,transparent 0 calc(25% - 1px),#eef0f3 calc(25% - 1px) 25%)`;
+  $('#stationSel').innerHTML = ['Toutes', ...state.stations].map(s => `<option value="${esc(s)}" ${s === state.station ? 'selected' : ''}>${s === 'Toutes' ? 'Toutes les stations' : esc(s)}</option>`).join('');
+  $('#mdays').style.display = isMob() ? 'flex' : 'none';
+  if (isMob()) return renderMobile();
 
   let h = `<div class="prow phead"><div class="pname">Salarié</div><div class="ptrack-head">`;
   for (let d = 0; d < 7; d++) {
-    const dt = weekDate(w, d);
-    h += `<div class="dh ${d >= 5 ? 'we' : ''} ${fer.includes(d) ? 'fer' : ''}"><div class="dn">${DAYN[d]} ${dt.getDate()} <span>${MOIS[dt.getMonth()]}</span>${fer.includes(d) ? '<b class="ferb">férié</b>' : ''}</div><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div></div>`;
+    const f = ferieAt(w, d);
+    h += `<div class="dh ${d >= 5 ? 'we' : ''} ${f ? 'fer' : ''}"><div class="dn">${DAYN[d]} <span>${fdShort(weekDate(w, d))}</span>${f ? `<b class="ferb ${f.chome ? '' : 'trav'}" title="${esc(f.nom)} — ${f.chome ? 'chômé' : 'travaillé'}">férié</b>` : ''}</div><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div></div>`;
   }
   h += `</div><div class="sc">Heures<br>comptées</div><div class="sc">Écart<br>à ${R.legale}h</div><div class="sc">dont<br>nuit</div><div class="sc">Contrôles<br>RH</div></div>`;
-
-  const list = visibleEmps();
-  const stations = state.station === 'Toutes' ? state.stations : [state.station];
+  const list = visibleEmps(), stations = state.station === 'Toutes' ? state.stations : [state.station];
   let tot = 0, nAlert = 0;
-  const prev = getSlots(w - 1);
   for (const st of stations) {
-    const es = list.filter(e => e.station === st);
-    if (!es.length) continue;
+    const es = list.filter(e => e.station === st); if (!es.length) continue;
     h += `<div class="group">${esc(st)}</div>`;
     for (const e of es) {
       const a = analyze(e.id, w); tot += a.counter; if (a.alerts.length) nAlert++;
-      let track = '';
-      for (let d = 0; d < 7; d++) track += `<div class="tday ${d >= 5 ? 'we' : ''} ${fer.includes(d) ? 'fer' : ''}" style="left:${d / 7 * 100}%;${dayBg}"></div>`;
-      for (const s of prev) if (s.emp === e.id && s.end > WEEK) track += slotHtml({ ...s, start: s.start - WEEK, end: s.end - WEEK }, true);
-      for (const s of getSlots(w)) if (s.emp === e.id) track += slotHtml(s);
-      if (drag && drag.kind === 'new' && drag.emp === e.id) {
-        const c = drag.cand;
-        track += `<div class="preview ${drag.err ? 'err' : ''}" style="left:${c.start / WEEK * 100}%;width:${(c.end - c.start) / WEEK * 100}%">${drag.err ? 'chevauchement' : (type(c.type).mode === 'jour' ? Math.round((c.end - c.start) / DAY) + ' j' : hm(c.start) + '–' + hm(c.end, true) + ' · ' + fmtH(c.end - c.start))}</div>`;
-      }
-      const ec = a.ecart, ecCls = ec === 0 ? 'zero' : ec > 0 ? 'pos' : 'neg';
-      const ecTxt = ec === 0 ? '0h' : (ec > 0 ? '+' : '') + fmtH(ec);
-      const ecTip = ec === 0 ? 'Pile ' + R.legale + 'h' : ec > 0 ? fmtH(ec) + ' de dépassement (heures supplémentaires)' : fmtH(-ec) + ' manquantes';
       h += `<div class="prow ${state.sel === e.id ? 'sel' : ''}">
         <div class="pname" data-emp="${e.id}" title="Voir le détail des contrôles"><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? ' · <span class="nb" title="Travailleur de nuit">nuit</span>' : ''}</div></div>
-        <div class="track" data-emp="${e.id}">${track}</div>
-        <div class="sc num" title="${a.absences ? 'dont ' + fmtH(a.absences) + ' d\'absences comptées (congés, férié…)' : ''}">${fmtH(a.counter)}</div>
-        <div class="sc"><span class="ecart ${ecCls}" title="${ecTip}">${ecTxt}</span></div>
+        ${trackHtml(e.id, w, 0, WEEK)}
+        <div class="sc num" title="${esc((a.absences ? 'dont ' + fmtH(a.absences) + ' d\'absences au forfait. ' : '') + (a.pauses ? fmtH(a.pauses) + ' de pauses déduites.' : ''))}">${fmtH(a.counter)}</div>
+        <div class="sc">${ecartHtml(a.ecart)}</div>
         <div class="sc num muted">${a.night ? fmtH(a.night) : '—'}</div>
-        <div class="sc"><button class="ctl ${a.alerts.length ? 'bad' : 'ok'}" data-emp="${e.id}" title="${esc(a.alerts.map(x => x.label + ' : ' + x.val + ' (' + x.lim + ')').join('\n'))}">${a.alerts.length ? '⚠ ' + a.alerts.length + ' alerte' + (a.alerts.length > 1 ? 's' : '') : '✓ OK'}</button></div>
+        <div class="sc">${ctlHtml(e, a)}</div>
       </div>`;
     }
   }
   $('#grid').innerHTML = h;
-  $('#legend').innerHTML = `<span><i class="nightsw"></i>Zone de nuit (${R.nuitDebut}h–${R.nuitFin}h)</span>
-    <span><span class="ecart zero">0h</span> pile ${R.legale}h</span>
-    <span><span class="ecart pos">+4h</span> dépassement (heures supp.)</span>
-    <span><span class="ecart neg">−3h</span> heures manquantes</span>
-    <span>Une nuit qui passe minuit compte pour le jour où elle commence.</span>
+  $('#legend').innerHTML = `<span><i class="dn-sw" style="background:linear-gradient(to right,${type('travail_jour').couleur} 50%,${type('travail_nuit').couleur} 50%)"></i>Heures de jour / de nuit (${R.nuitDebut}h–${R.nuitFin}h), calcul auto</span>
+    <span>Pause repas déduite auto : ${fmtH(R.pauseAuto)} au-delà de ${R.pauseSeuil}h</span>
+    <span>${ecartHtml(0)} pile</span><span>${ecartHtml(240)} dépassement</span><span>${ecartHtml(-180)} manquantes</span>
     <span class="spacer"></span><span class="summary">Semaine : <b>${fmtH(tot)}</b> comptées · <b>${nAlert}</b> salarié${nAlert > 1 ? 's' : ''} en alerte</span>`;
-  renderDetail();
-}
-function renderDetail() {
-  const el = $('#detail'), w = state.week;
   const e = emp(state.sel);
-  if (!e || !visibleEmps().includes(e)) { el.innerHTML = '<div class="hint">Cliquez sur le nom d\'un salarié (ou sur ses « Contrôles ») pour voir le détail des règles RH de la semaine.</div>'; return; }
-  const a = analyze(e.id, w);
-  let rows = a.checks.map(c => `<tr><td>${esc(c.label)}${c.details.length ? '<div class="det">' + c.details.map(esc).join('<br>') + '</div>' : ''}</td><td class="n">${c.val}</td><td class="n">${c.lim}</td><td class="st ${c.ok ? 'ok' : 'bad'}">${c.ok ? '✓' : '✗'}</td></tr>`).join('');
-  let dRows = a.days.map((D, i) => `<tr><td>${dayName(w, i)}</td><td class="n">${D.work ? fmtH(D.work) : '—'}</td><td class="n">${D.first != null ? fmtH(D.last - D.first) : '—'}</td><td class="n">${D.night ? fmtH(D.night) : '—'}</td></tr>`).join('');
-  el.innerHTML = `<h3>${esc(e.prenom)} ${esc(e.nom)} — contrôles de la semaine</h3>
-    <div class="sub">${esc(e.station)} · ${fmtH(a.counter)} comptées (dont ${fmtH(a.eff)} de travail effectif${a.absences ? ', ' + fmtH(a.absences) + ' d\'absences' : ''}) · écart à ${state.rules.legale}h : <b>${a.ecart === 0 ? '0h' : (a.ecart > 0 ? '+' : '') + fmtH(a.ecart)}</b>${a.ferieWorked ? ' · ' + fmtH(a.ferieWorked) + ' travaillées un jour férié' : ''}</div>
+  $('#detail').innerHTML = e && list.includes(e) ? `<h3>${esc(e.prenom)} ${esc(e.nom)} — contrôles de la semaine</h3>` + detailHtml(e) : '<div class="hint">Cliquez sur le nom d\'un salarié (ou sur ses « Contrôles ») pour voir le détail des règles RH de la semaine.</div>';
+}
+function detailHtml(e) {
+  const w = state.week, a = analyze(e.id, w);
+  const rows = a.checks.map(c => `<tr><td>${esc(c.label)}${c.details.length ? '<div class="det">' + c.details.map(esc).join('<br>') + '</div>' : ''}</td><td class="n">${c.val}</td><td class="n">${c.lim}</td><td class="st ${c.ok ? 'ok' : 'bad'}">${c.ok ? '✓' : '✗'}</td></tr>`).join('');
+  const dRows = a.days.map((D, i) => `<tr><td>${dayName(w, i)}${ferieAt(w, i) ? ' <b class="ferb trav">férié</b>' : ''}</td><td class="n">${D.work ? fmtH(D.work) : '—'}</td><td class="n">${D.first != null ? fmtH(D.last - D.first) : '—'}</td><td class="n">${D.night ? fmtH(D.night) : '—'}</td></tr>`).join('');
+  return `<div class="sub">${esc(e.station)} · ${fmtH(a.counter)} comptées (dont ${fmtH(a.eff)} de travail effectif${a.absences ? ', ' + fmtH(a.absences) + ' d\'absences' : ''}${a.pauses ? ', ' + fmtH(a.pauses) + ' de pauses déduites' : ''}) · écart à ${state.rules.legale}h : <b>${a.ecart === 0 ? '0h' : (a.ecart > 0 ? '+' : '') + fmtH(a.ecart)}</b>${a.ferieWorked ? ' · <b>' + fmtH(a.ferieWorked) + '</b> travaillées un jour férié' : ''}${a.recup ? ' · ' + fmtH(a.recup) + ' de récupération' : ''}</div>
     <div class="cols">
-      <table class="t"><thead><tr><th>Règle</th><th style="text-align:right">Valeur</th><th style="text-align:right">Limite</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-      <table class="t"><thead><tr><th>Jour</th><th style="text-align:right">Travail</th><th style="text-align:right">Amplitude</th><th style="text-align:right">dont nuit</th></tr></thead><tbody>${dRows}</tbody></table>
+      <table class="t"><thead><tr><th>Règle</th><th class="n">Valeur</th><th class="n">Limite</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      <table class="t"><thead><tr><th>Jour</th><th class="n">Travail</th><th class="n">Amplitude</th><th class="n">dont nuit</th></tr></thead><tbody>${dRows}</tbody></table>
     </div>`;
 }
 
-/* ---------- glisser à la souris ---------- */
+/* ---------- PLANNING (smartphone) : un jour à la fois ---------- */
+function renderMobile() {
+  const w = state.week, d = state.mday;
+  let chips = '';
+  for (let i = 0; i < 7; i++) { const dt = weekDate(w, i), f = ferieAt(w, i); chips += `<button class="mday-chip ${i === d ? 'on' : ''} ${f ? 'fer' : ''}" data-mday="${i}">${DAYN[i]}<b>${dt.getDate()}</b>${f ? '<span style="font-size:10px">férié</span>' : ''}</button>`; }
+  $('#mdays').innerHTML = chips;
+  const list = visibleEmps(), stations = state.station === 'Toutes' ? state.stations : [state.station];
+  let h = '';
+  for (const st of stations) {
+    const es = list.filter(e => e.station === st); if (!es.length) continue;
+    h += `<div class="mgroup">${esc(st)}</div>`;
+    for (const e of es) {
+      const a = analyze(e.id, w), D = a.days[d];
+      h += `<div class="mcard ${state.sel === e.id ? 'sel' : ''}">
+        <div class="mhead" data-emp="${e.id}"><div><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? ' · <span class="nb">nuit</span>' : ''}</div></div>
+          <div class="mstats"><span class="num" title="Heures comptées sur la semaine">${fmtH(a.counter)}</span>${ecartHtml(a.ecart)}${ctlHtml(e, a, true)}</div></div>
+        <div class="mtrack"><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div>${trackHtml(e.id, w, d * DAY, DAY)}</div>
+        <div class="mfoot"><span>${dayName(w, d)} : ${D.work ? '<b style="color:var(--ink)">' + fmtH(D.work) + '</b> de travail · amplitude ' + fmtH(D.last - D.first) + (D.night ? ' · nuit ' + fmtH(D.night) : '') : 'pas de travail'}</span><button class="btn sm" data-add="${e.id}">+ Ajouter</button></div>
+        ${state.sel === e.id ? '<div class="mdetail">' + detailHtml(e) + '</div>' : ''}
+      </div>`;
+    }
+  }
+  $('#mlist').innerHTML = h || '<div class="hint">Aucun salarié pour cette station.</div>';
+}
+
+/* ---------- glisser (souris ou doigt) ---------- */
 let drag = null;
 const snap = m => Math.round(m / state.step) * state.step;
 function overlaps(c, ignoreId) {
   const lay = type(c.type).mode;
   return getSlots(state.week).some(s => s.id !== ignoreId && s.emp === c.emp && type(s.type).mode === lay && s.start < c.end && c.start < s.end);
 }
-function clampSlot(c) { return c.start >= 0 && c.end <= WEEK + DAY && c.start < WEEK && c.end > c.start; }
-$('#grid').addEventListener('mousedown', ev => {
-  if (ev.button !== 0) return;
-  const name = ev.target.closest('.pname[data-emp]');
+const validSlot = c => c.start >= 0 && c.end <= WEEK + DAY && c.start < WEEK && c.end > c.start;
+function onSelect(ev) {
+  const name = ev.target.closest('[data-emp]:not(.track)');
   if (name) { state.sel = state.sel === +name.dataset.emp ? null : +name.dataset.emp; renderPlanning(); return; }
-  const ctl = ev.target.closest('.ctl');
-  if (ctl) { state.sel = +ctl.dataset.emp; renderPlanning(); $('#detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
+  const ctl = ev.target.closest('[data-ctl]');
+  if (ctl) { state.sel = +ctl.dataset.ctl; renderPlanning(); if (!isMob()) $('#detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
+  const add = ev.target.closest('[data-add]');
+  if (add) { addOnDay(+add.dataset.add, ev); return; }
+  const md = ev.target.closest('[data-mday]');
+  if (md) { state.mday = +md.dataset.mday; renderPlanning(); }
+}
+function onDown(ev) {
+  if (ev.button > 0) return;
+  if (ev.target.closest('[data-ctl],[data-add],[data-mday]') || (ev.target.closest('[data-emp]') && !ev.target.closest('.track'))) return;
   const track = ev.target.closest('.track'); if (!track) return;
-  const rect = track.getBoundingClientRect(), e = +track.dataset.emp;
-  const toMin = x => Math.max(0, Math.min(WEEK, (x - rect.left) / rect.width * WEEK));
+  const rect = track.getBoundingClientRect(), e = +track.dataset.emp, o = +track.dataset.o, span = +track.dataset.span;
+  const toMin = x => o + Math.max(0, Math.min(1, (x - rect.left) / rect.width)) * span;
   let slotEl = ev.target.closest('.slot');
   closePop();
-  // sur un fond « journée entière » avec un outil horaire : on dessine par-dessus (un simple clic ouvre le fond)
-  let bandSlot = null;
-  if (slotEl && slotEl.classList.contains('band') && state.tool !== 'gomme' && type(state.tool).mode === 'heures' && !ev.target.classList.contains('h-l') && !ev.target.classList.contains('h-r')) {
+  if (slotEl && slotEl.classList.contains('virt')) { toast('Férié chômé posé pour tout le service : modifiable dans Réglages › Jours fériés.'); return; }
+  let bandSlot = null; // sur un fond « journée entière » avec un outil horaire : on dessine par-dessus
+  if (slotEl && slotEl.classList.contains('band') && slotEl.dataset.id && state.tool !== 'gomme' && type(state.tool).mode === 'heures' && !ev.target.matches('.h-l,.h-r')) {
     bandSlot = getSlots(state.week).find(x => x.id === +slotEl.dataset.id); slotEl = null;
   }
   if (slotEl) {
@@ -557,118 +678,133 @@ $('#grid').addEventListener('mousedown', ev => {
     const s = getSlots(state.week).find(x => x.id === +slotEl.dataset.id);
     if (state.tool === 'gomme') { state.slots[state.week] = getSlots(state.week).filter(x => x !== s); renderAll(); return; }
     const kind = ev.target.classList.contains('h-l') ? 'l' : ev.target.classList.contains('h-r') ? 'r' : 'move';
-    drag = { kind, s, orig: { start: s.start, end: s.end }, x0: ev.clientX, rect, moved: false };
+    drag = { kind, s, orig: { start: s.start, end: s.end }, x0: ev.clientX, rect, span, moved: false };
   } else {
     if (state.tool === 'gomme') return;
-    const m = toMin(ev.clientX);
-    drag = { kind: 'new', emp: e, a: m, b: m, rect, cand: null, err: false, bandSlot, x0: ev.clientX, moved: false };
-    updateNew(m);
+    drag = { kind: 'new', emp: e, a: toMin(ev.clientX), rect, o, span, toMin, cand: null, err: false, bandSlot, x0: ev.clientX, moved: false };
   }
-  ev.preventDefault();
-});
+  if (ev.pointerType === 'mouse') ev.preventDefault();
+}
 function updateNew(m) {
-  drag.b = m;
-  const t = type(state.tool);
-  let start, end;
-  if (t.mode === 'jour') { start = Math.floor(Math.min(drag.a, drag.b) / DAY) * DAY; end = Math.floor(Math.max(drag.a, drag.b) / DAY) * DAY + DAY; }
-  else { start = snap(Math.min(drag.a, drag.b)); end = snap(Math.max(drag.a, drag.b)); if (end === start) end = start + state.step; }
-  drag.cand = { emp: drag.emp, type: t.id, start, end };
+  const t = type(state.tool); let start, end;
+  if (t.mode === 'jour') { start = Math.floor(Math.min(drag.a, m) / DAY) * DAY; end = Math.floor(Math.max(drag.a, m) / DAY) * DAY + DAY; }
+  else { start = snap(Math.min(drag.a, m)); end = snap(Math.max(drag.a, m)); if (end === start) end = start + state.step; }
+  drag.cand = autoType({ emp: drag.emp, type: t.id, start, end });
   drag.err = overlaps(drag.cand);
   renderPlanning();
 }
-document.addEventListener('mousemove', ev => {
+function onMove(ev) {
   if (!drag) return;
-  const rect = drag.rect;
-  if (drag.kind === 'new') { if (Math.abs(ev.clientX - drag.x0) > 3) drag.moved = true; updateNew(Math.max(0, Math.min(WEEK, (ev.clientX - rect.left) / rect.width * WEEK))); return; }
-  if (Math.abs(ev.clientX - drag.x0) > 3) drag.moved = true;
+  if (Math.abs(ev.clientX - drag.x0) > 4) drag.moved = true;
   if (!drag.moved) return;
+  if (drag.kind === 'new') { updateNew(drag.toMin(ev.clientX)); return; }
   const s = drag.s, t = type(s.type), unit = t.mode === 'jour' ? DAY : state.step;
-  const delta = Math.round((ev.clientX - drag.x0) / rect.width * WEEK / unit) * unit;
+  const delta = Math.round((ev.clientX - drag.x0) / drag.rect.width * drag.span / unit) * unit;
   const c = { ...s, start: drag.orig.start, end: drag.orig.end };
   if (drag.kind === 'move') { c.start += delta; c.end += delta; }
   if (drag.kind === 'l') c.start = Math.min(drag.orig.end - unit, drag.orig.start + delta);
   if (drag.kind === 'r') c.end = Math.max(drag.orig.start + unit, drag.orig.end + delta);
-  if (clampSlot(c) && !overlaps(c, s.id)) { s.start = c.start; s.end = c.end; renderPlanning(); }
-});
-document.addEventListener('mouseup', ev => {
+  if (validSlot(c) && !overlaps(c, s.id)) { s.start = c.start; s.end = c.end; autoType(s); renderPlanning(); }
+}
+function onUp(ev) {
   if (!drag) return;
   const d = drag; drag = null;
   if (d.kind === 'new') {
-    if (d.bandSlot && !d.moved) { renderAll(); openPop(d.bandSlot, ev.clientX, ev.clientY); return; }
+    if (!d.moved) { renderAll(); if (d.bandSlot) openPop(d.bandSlot, ev.clientX, ev.clientY); return; }
     if (d.err) toast('Impossible : ce créneau chevauche un créneau existant.');
-    else getSlots(state.week).push({ id: uid++, ...d.cand });
+    else if (d.cand) getSlots(state.week).push({ id: uid++, ...d.cand });
     renderAll(); return;
   }
   if (!d.moved) openPop(d.s, ev.clientX, ev.clientY);
   renderAll();
-});
+}
+document.addEventListener('click', ev => { if (ev.target.closest('#v-planning')) onSelect(ev); });
+document.addEventListener('pointerdown', onDown);
+document.addEventListener('pointermove', onMove);
+document.addEventListener('pointerup', onUp);
+document.addEventListener('pointercancel', () => { if (drag) { drag = null; renderAll(); } });
+function addOnDay(e, ev) { // bouton « + Ajouter » (smartphone)
+  const t = type(state.tool === 'gomme' ? 'travail_jour' : state.tool), d = state.mday;
+  const c = autoType(t.mode === 'jour' ? { emp: e, type: t.id, start: d * DAY, end: (d + 1) * DAY } : { emp: e, type: t.id, start: d * DAY + 8 * 60, end: d * DAY + 16 * 60 });
+  if (overlaps(c)) return toast('Il y a déjà un créneau à cet endroit : touchez-le pour le modifier.');
+  const s = { id: uid++, ...c }; getSlots(state.week).push(s); renderAll(); openPop(s, ev.clientX, ev.clientY);
+}
 
-/* ---------- fenêtre de modification ---------- */
+/* ---------- bulle de modification ---------- */
 const pop = $('#pop');
 function closePop() { pop.style.display = 'none'; }
-function dayOpts(sel, max = 7) { let o = ''; for (let i = 0; i <= max; i++) o += `<option value="${i}" ${i === sel ? 'selected' : ''}>${i === 7 ? 'Lun suivant' : dayName(state.week, i)}</option>`; return o; }
+function dayOpts(sel, max) { let o = ''; for (let i = 0; i <= max; i++) o += `<option value="${i}" ${i === sel ? 'selected' : ''}>${i === 7 ? 'Lun suivant' : dayName(state.week, i)}</option>`; return o; }
 function timeOpts(min) { const v = tv(min); let o = ''; for (let m = 0; m < DAY; m += state.step) { const t = tv(m); o += `<option value="${t}" ${t === v ? 'selected' : ''}>${t.replace(':', 'h')}</option>`; } return o; }
 function openPop(s, x, y) {
-  const t = type(s.type);
-  pop.innerHTML = `<div class="pt">Modifier le créneau</div>
-    <label>Type<select id="pType">${state.types.map(o => `<option value="${o.id}" ${o.id === s.type ? 'selected' : ''}>${esc(o.nom)}</option>`).join('')}</select></label>
-    <div class="pr"><label>Début<select id="pSD">${dayOpts(Math.floor(s.start / DAY), 6)}</select></label><select id="pST" ${t.mode === 'jour' ? 'disabled' : ''}>${timeOpts(s.start)}</select></div>
-    <div class="pr"><label>Fin<select id="pED">${dayOpts(Math.floor(s.end / DAY))}</select></label><select id="pET" ${t.mode === 'jour' ? 'disabled' : ''}>${timeOpts(s.end)}</select></div>
-    <div class="pdur">Durée : ${t.mode === 'jour' ? Math.round((s.end - s.start) / DAY) + ' jour(s)' : fmtH(s.end - s.start)}</div>
+  const t = type(s.type), R = state.rules, jour = t.mode === 'jour', work = t.mode === 'heures' && t.effectif;
+  const p = pauseOf(s), nw = isWork(s) ? nightWork(s) : 0;
+  const pauseOpts = [['', `Automatique (${R.pauseAuto} min au-delà de ${R.pauseSeuil}h)`], ['0', 'Aucune'], ['20', '20 min'], ['30', '30 min'], ['45', '45 min'], ['60', '1h'], ['90', '1h30']]
+    .map(([v, l]) => `<option value="${v}" ${(s.pause == null ? '' : String(s.pause)) === v ? 'selected' : ''}>${l}</option>`).join('');
+  pop.innerHTML = `<div class="pt"><span>Modifier le créneau</span><button class="icon" id="pX">✕</button></div>
+    <label>Type<select id="pType">${state.types.filter(o => o.id !== 'travail_nuit').map(o => `<option value="${o.id}" ${o.id === (isWork(s) ? 'travail_jour' : s.type) ? 'selected' : ''}>${esc(o.nom)}</option>`).join('')}</select></label>
+    ${isWork(s) ? `<div class="auto">${s.type === 'travail_nuit' ? '🌙 Classé automatiquement en travail de nuit' : '☀ Travail de jour'}${nw ? ' · ' + fmtH(nw) + ' entre ' + R.nuitDebut + 'h et ' + R.nuitFin + 'h' : ''}</div>` : ''}
+    <div class="pr"><label>Début<select id="pSD">${dayOpts(Math.floor(s.start / DAY), 6)}</select></label><select id="pST" ${jour ? 'disabled' : ''}>${timeOpts(s.start)}</select></div>
+    <div class="pr"><label>Fin<select id="pED">${dayOpts(Math.floor(s.end / DAY), 7)}</select></label><select id="pET" ${jour ? 'disabled' : ''}>${timeOpts(s.end)}</select></div>
+    ${work ? `<label>Pause repas<select id="pPause">${pauseOpts}</select></label>` : ''}
+    <div class="calc">${jour ? `${Math.round((s.end - s.start) / DAY)} jour(s) × forfait ${t.forfait}h = <b>${fmtH(t.compteur ? t.forfait * 60 * Math.round((s.end - s.start) / DAY) : 0)}</b> comptées` :
+      work ? `Présence ${fmtH(s.end - s.start)} − pause ${fmtH(p)} = <b>${fmtH(workMin(s))} de travail</b>${nw ? '<br>dont ' + fmtH(nw) + ' de nuit' : ''}` : `${fmtH(s.end - s.start)} · non compté dans les heures`}</div>
     <div class="pb"><button class="btn danger" id="pDel">Supprimer</button><button class="btn primary" id="pOk">OK</button></div>`;
   pop.style.display = 'block';
-  pop.style.left = Math.min(x + 8, innerWidth - 300) + 'px';
-  pop.style.top = Math.min(y + 8, innerHeight - 270) + 'px';
+  if (!isMob()) { pop.style.left = Math.min(x + 8, innerWidth - 310) + 'px'; pop.style.top = Math.max(8, Math.min(y + 8, innerHeight - pop.offsetHeight - 8)) + 'px'; }
   const apply = () => {
-    const nt = type($('#pType').value);
-    const pm = v => { const [a, b] = v.split(':').map(Number); return a * 60 + b; };
-    let c = { ...s, type: nt.id, start: +$('#pSD').value * DAY + (nt.mode === 'jour' ? 0 : pm($('#pST').value)), end: +$('#pED').value * DAY + (nt.mode === 'jour' ? 0 : pm($('#pET').value)) };
+    const nt = type($('#pType').value), pm = v => { const [a, b] = v.split(':').map(Number); return a * 60 + b; };
+    const c = { ...s, type: nt.id, start: +$('#pSD').value * DAY + (nt.mode === 'jour' ? 0 : pm($('#pST').value)), end: +$('#pED').value * DAY + (nt.mode === 'jour' ? 0 : pm($('#pET').value)) };
     if (nt.mode === 'jour' && c.end <= c.start) c.end = c.start + DAY;
-    if (!clampSlot(c)) { toast('La fin doit être après le début.'); return openPop(s, x, y); }
+    if ($('#pPause')) c.pause = $('#pPause').value === '' ? undefined : +$('#pPause').value;
+    autoType(c);
+    if (!validSlot(c)) { toast('La fin doit être après le début.'); return openPop(s, x, y); }
     if (overlaps(c, s.id)) { toast('Impossible : chevauchement avec un autre créneau.'); return openPop(s, x, y); }
-    Object.assign(s, c); renderAll(); openPop(s, x, y);
+    Object.assign(s, c); if (c.pause === undefined) delete s.pause;
+    renderAll(); openPop(s, x, y);
   };
-  ['pType', 'pSD', 'pST', 'pED', 'pET'].forEach(id => $('#' + id).addEventListener('change', apply));
+  ['pType', 'pSD', 'pST', 'pED', 'pET', 'pPause'].forEach(id => { const el = $('#' + id); if (el) el.addEventListener('change', apply); });
   $('#pDel').onclick = () => { state.slots[state.week] = getSlots(state.week).filter(z => z !== s); closePop(); renderAll(); };
-  $('#pOk').onclick = closePop;
+  $('#pOk').onclick = $('#pX').onclick = closePop;
 }
-document.addEventListener('mousedown', ev => { if (pop.style.display === 'block' && !pop.contains(ev.target) && !ev.target.closest('.slot')) closePop(); });
+document.addEventListener('pointerdown', ev => { if (pop.style.display === 'block' && !pop.contains(ev.target) && !ev.target.closest('.slot,[data-add]')) closePop(); }, true);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closePop(); });
 
 /* ---------- RÉCAP ---------- */
 function seasonStats(e) {
-  const R = state.rules, S = state.season; let weeks = 0, tot = 0, neg = 0, pos = 0, night = 0, alerts = 0; const cells = [];
+  const S = state.season; let weeks = 0, tot = 0, neg = 0, pos = 0, night = 0, alerts = 0, recup = 0, fer = 0; const cells = [];
   for (let w = S.start; w <= S.end; w++) {
     if (!getSlots(w).some(s => s.emp === e)) { cells.push(null); continue; }
-    const a = analyze(e, w); weeks++; tot += a.counter; night += a.night; alerts += a.alerts.length;
+    const a = analyze(e, w); weeks++; tot += a.counter; night += a.night; alerts += a.alerts.length; recup += a.recup; fer += a.ferieWorked;
     if (a.ecart < 0) neg -= a.ecart; else pos += a.ecart; cells.push(a.ecart);
   }
-  return { weeks, tot, neg, pos, solde: pos - neg, night, alerts, cells, avg12: avgN(effOf, e, Math.min(state.week, S.end), R.moyN) };
+  return { weeks, tot, neg, pos, recup, fer, solde: pos - neg - recup, night, alerts, cells, avg12: avgN(effOf, e, Math.min(state.week, S.end), state.rules.moyN) };
 }
 function cellStyle(d) {
   if (d === 0) return 'background:#dcfce7;color:#166534';
   const k = Math.min(1, Math.abs(d) / 600);
   return d > 0 ? `background:hsl(28 95% ${92 - k * 30}%);color:#7c2d12` : `background:hsl(0 85% ${93 - k * 28}%);color:#7f1d1d`;
 }
+const sgn = v => (v > 0 ? '+' : '') + fmtH(v);
 function renderRecap() {
   const S = state.season;
-  $('#seasonLabel').textContent = `Saison du ${weekDate(S.start).toLocaleDateString('fr-FR')} au ${weekDate(S.end, 6).toLocaleDateString('fr-FR')}`;
+  $('#seasonLabel').textContent = `Saison du ${fd(weekDate(S.start))} au ${fd(weekDate(S.end, 6))}`;
   stationChips($('#stationChips2'));
-  const list = visibleEmps(); const st = list.map(e => ({ e, s: seasonStats(e.id) }));
-  const sum = k => st.reduce((t, x) => t + x.s[k], 0);
+  const st = visibleEmps().map(e => ({ e, s: seasonStats(e.id) })), sum = k => st.reduce((t, x) => t + x.s[k], 0);
   $('#kpis').innerHTML = `
     <div class="kpi"><div class="k">Heures comptées (saison)</div><div class="v">${fmtH(sum('tot'))}</div></div>
     <div class="kpi"><div class="k">Dépassements cumulés</div><div class="v pos">+${fmtH(sum('pos'))}</div></div>
     <div class="kpi"><div class="k">Heures manquantes cumulées</div><div class="v neg">${fmtH(-sum('neg'))}</div></div>
-    <div class="kpi"><div class="k">Alertes RH (toutes semaines)</div><div class="v ${sum('alerts') ? 'neg' : ''}">${sum('alerts')}</div></div>`;
-  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th style="text-align:right">Semaines planifiées</th><th style="text-align:right">Heures comptées</th><th style="text-align:right">Heures manquantes</th><th style="text-align:right">Dépassements</th><th style="text-align:right">Solde</th><th style="text-align:right">Moy. ${state.rules.moyN} sem.</th><th style="text-align:right">Heures de nuit</th><th style="text-align:right">Alertes</th></tr></thead><tbody>` +
-    st.map(({ e, s }) => `<tr><td><b>${esc(e.prenom)} ${esc(e.nom)}</b></td><td>${esc(e.station)}</td><td class="n">${s.weeks}</td><td class="n">${fmtH(s.tot)}</td><td class="n" style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</td><td class="n" style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</td><td class="n"><span class="ecart ${s.solde === 0 ? 'zero' : s.solde > 0 ? 'pos' : 'neg'}">${s.solde > 0 ? '+' : ''}${fmtH(s.solde)}</span></td><td class="n">${fmtH(s.avg12)}</td><td class="n">${fmtH(s.night)}</td><td class="n" style="${s.alerts ? 'color:var(--neg);font-weight:700' : ''}">${s.alerts || '—'}</td></tr>`).join('') + '</tbody>';
+    <div class="kpi"><div class="k">Alertes RH</div><div class="v ${sum('alerts') ? 'neg' : ''}">${sum('alerts')}</div></div>`;
+  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th class="n">Semaines</th><th class="n">Heures comptées</th><th class="n">Manquantes</th><th class="n">Dépassements</th><th class="n">Récupérées</th><th class="n">Solde</th><th class="n">Moy. ${state.rules.moyN} sem.</th><th class="n">Nuit</th><th class="n">Fériés travaillés</th><th class="n">Alertes</th></tr></thead><tbody>` +
+    st.map(({ e, s }) => `<tr><td><b>${esc(e.prenom)} ${esc(e.nom)}</b></td><td>${esc(e.station)}</td><td class="n">${s.weeks}</td><td class="n">${fmtH(s.tot)}</td><td class="n" style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</td><td class="n" style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</td><td class="n">${s.recup ? fmtH(s.recup) : '—'}</td><td class="n">${ecartHtml(s.solde)}</td><td class="n">${fmtH(s.avg12)}</td><td class="n">${fmtH(s.night)}</td><td class="n">${s.fer ? fmtH(s.fer) : '—'}</td><td class="n" style="${s.alerts ? 'color:var(--neg);font-weight:700' : ''}">${s.alerts || '—'}</td></tr>`).join('') + '</tbody>';
+  $('#recapCards').innerHTML = st.map(({ e, s }) => `<div class="rcard"><div class="top"><div><b>${esc(e.prenom)} ${esc(e.nom)}</b><div class="hint" style="font-size:12px">${esc(e.station)} · ${s.weeks} sem.</div></div><div>Solde ${ecartHtml(s.solde)}</div></div>
+    <div class="lines"><span>Comptées <b>${fmtH(s.tot)}</b></span><span>Manquantes <b style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</b></span><span>Dépassements <b style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</b></span><span>Récupérées <b>${s.recup ? fmtH(s.recup) : '—'}</b></span><span>Nuit <b>${fmtH(s.night)}</b></span><span>Alertes <b style="${s.alerts ? 'color:var(--neg)' : ''}">${s.alerts || '—'}</b></span></div></div>`).join('');
   let h = '<table><thead><tr><th></th>';
-  for (let w = S.start; w <= S.end; w++) h += `<th class="${w === state.week ? 'cur' : ''}">S${isoWeek(weekDate(w))}</th>`;
+  for (let w = S.start; w <= S.end; w++) h += `<th class="${w === state.week ? 'cur' : ''}" title="du ${fd(weekDate(w))} au ${fd(weekDate(w, 6))}">S${isoWeek(weekDate(w))}</th>`;
   h += '</tr></thead><tbody>';
   for (const { e, s } of st) {
     h += `<tr><td class="nm">${esc(e.prenom)} ${esc(e.nom[0])}.</td>`;
-    s.cells.forEach((d, i) => { const w = S.start + i; h += d == null ? `<td class="c np ${w === state.week ? 'cur' : ''}" data-w="${w}" title="Pas encore planifié">·</td>` : `<td class="c ${w === state.week ? 'cur' : ''}" data-w="${w}" style="${cellStyle(d)}" title="S${isoWeek(weekDate(w))} : ${d === 0 ? 'pile 35h' : (d > 0 ? '+' : '') + fmtH(d)}">${d === 0 ? '0' : (d > 0 ? '+' : '') + Math.round(d / 60)}</td>`; });
+    s.cells.forEach((d, i) => { const w = S.start + i, cur = w === state.week ? 'cur' : '', tt = `S${isoWeek(weekDate(w))} (${fd(weekDate(w))})`; h += d == null ? `<td class="c np ${cur}" data-w="${w}" title="${tt} : pas encore planifié">·</td>` : `<td class="c ${cur}" data-w="${w}" style="${cellStyle(d)}" title="${tt} : ${d === 0 ? 'pile 35h' : sgn(d)}">${d === 0 ? '0' : (d > 0 ? '+' : '') + Math.round(d / 60)}</td>`; });
     h += '</tr>';
   }
   $('#heatmap').innerHTML = h + '</tbody></table>';
@@ -684,50 +820,54 @@ function renderSettings() {
       <td style="text-align:center"><input type="checkbox" data-f="nuit" ${e.nuit ? 'checked' : ''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="actif" ${e.actif ? 'checked' : ''}></td>
       <td><button class="icon" data-del-emp="${e.id}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
-
-  const R = state.rules;
-  const r = (k, label, u = 'h') => `<div class="rule"><span>${label}</span><span><input type="number" min="0" step="0.5" data-rule="${k}" value="${R[k]}"><span class="u">${u}</span></span></div>`;
+  const R = state.rules, r = (k, label, u = 'h') => `<div class="rule"><span>${label}</span><span><input type="number" min="0" step="0.5" data-rule="${k}" value="${R[k]}"><span class="u">${u}</span></span></div>`;
   $('#rules').innerHTML = `
     <div><h4>Durées de travail</h4>${r('legale', 'Durée légale par semaine')}${r('maxSem', 'Maxi sur une semaine')}${r('maxMoy', 'Maxi en moyenne')}${r('moyN', '… calculée sur', 'sem.')}${r('maxJour', 'Maxi sur une journée')}${r('amplitude', 'Amplitude maxi d\'une journée')}</div>
-    <div><h4>Repos minimum</h4>${r('reposJour', 'Repos entre 2 journées')}${r('reposHebdo', 'Repos hebdomadaire d\'affilée')}</div>
+    <div><h4>Repos minimum</h4>${r('reposJour', 'Repos entre 2 journées')}${r('reposHebdo', 'Repos hebdomadaire d\'affilée')}
+      <h4 class="mt">Pause repas automatique</h4>${r('pauseAuto', 'Durée de la pause', 'min')}${r('pauseSeuil', 'Si le créneau dépasse')}</div>
     <div><h4>Travail de nuit</h4>${r('nuitDebut', 'La nuit commence à')}${r('nuitFin', 'La nuit finit à')}${r('nuitMaxPoste', 'Maxi par poste de nuit')}${r('nuitMoy', 'Maxi en moyenne (travailleur de nuit)')}</div>`;
-
-  $('#typeTable').innerHTML = `<thead><tr><th>Couleur</th><th>Nom</th><th>Saisie</th><th>Compte dans les 35h ?</th><th>Forfait / jour</th><th>Temps de travail effectif ?<br><small style="font-weight:400">(compte pour 48h, 10h, 13h…)</small></th><th></th></tr></thead><tbody>` +
-    state.types.map(t => `<tr data-t="${t.id}"><td><input type="color" data-tf="couleur" value="${t.couleur}"></td><td><input type="text" data-tf="nom" value="${esc(t.nom)}"></td>
-      <td><select data-tf="mode"><option value="heures" ${t.mode === 'heures' ? 'selected' : ''}>Horaires</option><option value="jour" ${t.mode === 'jour' ? 'selected' : ''}>Journée entière</option></select></td>
+  $('#typeTable').innerHTML = `<thead><tr><th>Couleur</th><th>Nom</th><th>Saisie</th><th>Compte dans les 35h ?</th><th>Forfait / jour</th><th>Temps de travail effectif ?<br><small style="font-weight:400">(compte pour 48h, 10h, 13h…)</small></th><th>Puise dans le solde ?</th><th></th></tr></thead><tbody>` +
+    state.types.map(t => { const fixed = isWork({ type: t.id }); return `<tr data-t="${t.id}"><td><input type="color" data-tf="couleur" value="${t.couleur}"></td><td><input type="text" data-tf="nom" value="${esc(t.nom)}">${t.id === 'travail_nuit' ? `<div class="hint" style="font-size:11.5px">posé automatiquement quand le créneau est surtout entre ${R.nuitDebut}h et ${R.nuitFin}h</div>` : ''}</td>
+      <td><select data-tf="mode" ${fixed ? 'disabled' : ''}><option value="heures" ${t.mode === 'heures' ? 'selected' : ''}>Horaires</option><option value="jour" ${t.mode === 'jour' ? 'selected' : ''}>Journée entière</option></select></td>
       <td style="text-align:center"><input type="checkbox" data-tf="compteur" ${t.compteur ? 'checked' : ''}></td>
-      <td>${t.mode === 'jour' ? `<input type="number" step="0.5" min="0" data-tf="forfait" value="${t.forfait}"> h` : '<span class="hint">durée réelle</span>'}</td>
+      <td>${t.mode === 'jour' ? `<input type="number" step="0.5" min="0" data-tf="forfait" value="${t.forfait}"> h` : '<span class="hint">durée réelle − pause</span>'}</td>
       <td style="text-align:center"><input type="checkbox" data-tf="effectif" ${t.effectif ? 'checked' : ''} ${t.mode === 'jour' ? 'disabled' : ''}></td>
-      <td><button class="icon" data-del-type="${t.id}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
-
-  $('#stationList').innerHTML = state.stations.map((s, i) => `<div class="rule"><input type="text" data-st-i="${i}" value="${esc(s)}" style="flex:1"><span class="hint" style="margin:0 8px">${state.emps.filter(e => e.station === s).length} salarié(s)</span><button class="icon" data-del-st="${i}" title="Supprimer">🗑</button></div>`).join('');
-
+      <td style="text-align:center"><input type="checkbox" data-tf="deduit" ${t.deduit ? 'checked' : ''} ${t.mode !== 'jour' ? 'disabled' : ''}></td>
+      <td>${fixed ? '' : `<button class="icon" data-del-type="${t.id}" title="Supprimer">🗑</button>`}</td></tr>`; }).join('') + '</tbody>';
+  $('#stationList').innerHTML = state.stations.map((s, i) => `<div class="rule"><input type="text" data-st-i="${i}" value="${esc(s)}" style="flex:1"><span class="hint" style="margin:0 8px;white-space:nowrap">${state.emps.filter(e => e.station === s).length} salarié(s)</span><button class="icon" data-del-st="${i}" title="Supprimer">🗑</button></div>`).join('');
   const S = state.season;
   $('#seasonForm').innerHTML = `
-    <div class="rule"><span>Début de saison</span><input type="date" data-season="start" value="${iso(weekDate(S.start))}"></div>
-    <div class="rule"><span>Fin de saison</span><input type="date" data-season="end" value="${iso(weekDate(S.end, 6))}"></div>
+    <div class="rule"><span>Début de saison</span><input type="text" class="date" placeholder="jj/mm/aaaa" data-season="start" value="${fd(weekDate(S.start))}"></div>
+    <div class="rule"><span>Fin de saison</span><input type="text" class="date" placeholder="jj/mm/aaaa" data-season="end" value="${fd(weekDate(S.end, 6))}"></div>
     <div class="rule"><span>La semaine commence le</span><select disabled><option>Lundi</option></select></div>
-    <div class="rule"><span>Précision du glisser</span><select id="stepSel">${[15, 30, 60].map(v => `<option value="${v}" ${v === state.step ? 'selected' : ''}>${v === 60 ? '1 heure' : v + ' minutes'}</option>`).join('')}</select></div>
-    <div style="margin-top:10px;font-size:12.5px;color:var(--muted)">Jours fériés (calculés automatiquement, modifiables) :</div>
-    <div class="ferlist" style="margin-top:6px">${state.feries.slice().sort().map(f => `<span>${new Date(f + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>`).join('')}</div>`;
+    <div class="rule"><span>Précision du glisser</span><select id="stepSel">${[15, 30, 60].map(v => `<option value="${v}" ${v === state.step ? 'selected' : ''}>${v === 60 ? '1 heure' : v + ' minutes'}</option>`).join('')}</select></div>`;
+  $('#ferTable').innerHTML = `<thead><tr><th>Date</th><th>Nom</th><th style="text-align:center">Chômé</th><th></th></tr></thead><tbody>` +
+    state.feries.slice().sort((a, b) => a.d.localeCompare(b.d)).map(f => `<tr data-fer="${f.d}"><td><input type="text" class="date" data-ff="d" value="${fdIso(f.d)}" placeholder="jj/mm/aaaa"></td><td><input type="text" data-ff="nom" value="${esc(f.nom)}"></td><td style="text-align:center"><input type="checkbox" data-ff="chome" ${f.chome ? 'checked' : ''}></td><td><button class="icon" data-del-fer="${f.d}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
 }
 $('#v-reglages').addEventListener('change', ev => {
   const t = ev.target;
   if (t.dataset.f) { const e = emp(+t.closest('tr').dataset.e); e[t.dataset.f] = t.type === 'checkbox' ? t.checked : t.value; }
   else if (t.dataset.rule) state.rules[t.dataset.rule] = +t.value;
-  else if (t.dataset.tf) { const ty = type(t.closest('tr').dataset.t); ty[t.dataset.tf] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? +t.value : t.value; if (ty.mode === 'jour') ty.effectif = false; }
+  else if (t.dataset.tf) { const ty = type(t.closest('tr').dataset.t); ty[t.dataset.tf] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? +t.value : t.value; if (ty.mode === 'jour') ty.effectif = false; else ty.deduit = false; }
   else if (t.dataset.stI) { const i = +t.dataset.stI, old = state.stations[i]; state.stations[i] = t.value; state.emps.forEach(e => { if (e.station === old) e.station = t.value; }); if (state.station === old) state.station = t.value; }
-  else if (t.dataset.season) { const o = weekOffsetOf(t.value); state.season[t.dataset.season] = o; }
+  else if (t.dataset.season) { const d = parseFd(t.value); if (!d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); } state.season[t.dataset.season] = weekOffsetOf(d); }
+  else if (t.dataset.ff) {
+    const f = state.feries.find(x => x.d === t.closest('tr').dataset.fer);
+    if (t.dataset.ff === 'd') { const d = parseFd(t.value); if (!d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); } f.d = iso(d); }
+    else f[t.dataset.ff] = t.type === 'checkbox' ? t.checked : t.value;
+  }
   else if (t.id === 'stepSel') state.step = +t.value;
   renderAll(); toast('Réglage modifié (maquette : non enregistré)');
 });
 $('#v-reglages').addEventListener('click', ev => {
   const t = ev.target;
-  if (t.dataset.delEmp) { state.emps = state.emps.filter(e => e.id !== +t.dataset.delEmp); }
-  else if (t.dataset.delType) { if (state.types.length > 1) state.types = state.types.filter(x => x.id !== t.dataset.delType); }
+  if (t.dataset.delEmp) state.emps = state.emps.filter(e => e.id !== +t.dataset.delEmp);
+  else if (t.dataset.delType) state.types = state.types.filter(x => x.id !== t.dataset.delType);
+  else if (t.dataset.delFer) state.feries = state.feries.filter(x => x.d !== t.dataset.delFer);
   else if (t.dataset.delSt) { const s = state.stations[+t.dataset.delSt]; if (state.emps.some(e => e.station === s)) return toast('Déplacez d\'abord les salariés de cette station.'); state.stations.splice(+t.dataset.delSt, 1); }
   else if (t.id === 'addEmp') state.emps.push({ id: nextEmpId++, nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true });
-  else if (t.id === 'addType') state.types.push({ id: 'type' + uid++, nom: 'Nouveau type', couleur: '#0891b2', mode: 'heures', compteur: true, effectif: true, forfait: 0 });
+  else if (t.id === 'addType') state.types.push({ id: 'type' + uid++, nom: 'Nouveau type', couleur: '#0891b2', mode: 'heures', compteur: true, effectif: true, forfait: 0, deduit: false });
+  else if (t.id === 'addFer') state.feries.push({ d: '2027-12-31', nom: 'Nouveau jour férié', chome: false });
   else if (t.id === 'addStation') state.stations.push('Nouvelle station');
   else return;
   renderAll();
@@ -738,21 +878,22 @@ function renderAll() { renderTools(); renderPlanning(); renderRecap(); renderSet
 function showTab(name) {
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + name));
-  renderAll();
+  closePop(); renderAll(); scrollTo(0, 0);
 }
 document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 $('#prev').onclick = () => { state.week--; renderAll(); };
 $('#next').onclick = () => { state.week++; renderAll(); };
-$('#today').onclick = () => { state.week = 0; renderAll(); };
+$('#today').onclick = () => { state.week = 0; state.mday = TODAY_DAY; renderAll(); };
+$('#stationSel').onchange = ev => { state.station = ev.target.value; renderAll(); };
 $('#copyPrev').onclick = () => {
   if (!confirm('Remplacer cette semaine par une copie de la semaine précédente ?')) return;
   state.slots[state.week] = getSlots(state.week - 1).map(s => ({ ...s, id: uid++ })); renderAll(); toast('Semaine précédente copiée');
 };
 $('#tools').addEventListener('click', ev => { const b = ev.target.closest('[data-tool]'); if (!b) return; state.tool = b.dataset.tool; renderTools(); });
 document.addEventListener('click', ev => { const c = ev.target.closest('.chip[data-st]'); if (!c) return; state.station = c.dataset.st; renderAll(); });
+mq.addEventListener('change', () => { closePop(); renderAll(); });
 let toastT;
-function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
-
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
 renderAll();
 </script>
 </body>
