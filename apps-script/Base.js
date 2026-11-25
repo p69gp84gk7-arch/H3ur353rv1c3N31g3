@@ -16,9 +16,32 @@ function texteVersDate_(v) {
 function ouvrirBase_() {
   // Le programme est rattaché au Sheet : on l'utilise directement (marche aussi à l'ouverture
   // du Sheet, où Google refuse openById tant que l'autorisation n'a pas été donnée).
-  const actif = SpreadsheetApp.getActiveSpreadsheet();
-  if (actif && actif.getId() === CONFIG.SHEET_ID) return actif;
-  return SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  // Chaque chef utilise la page avec son propre compte : seuls ceux qui peuvent
+  // MODIFIER le Google Sheet ont accès (donner l'accès = partager le Sheet).
+  let ss = null;
+  try {
+    const actif = SpreadsheetApp.getActiveSpreadsheet();
+    ss = actif && actif.getId() === CONFIG.SHEET_ID ? actif : SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  } catch (e) { ss = null; }
+  if (!ss) throw new Error(ACCES_REFUSE_);
+  return ss;
+}
+
+const ACCES_REFUSE_ = "Accès refusé : votre compte Google n'a pas accès au planning. " +
+  'Demandez au chef de service de vous partager le Google Sheet « Heures Service Neige – Base de données » ' +
+  'avec le droit de modification, puis rechargez cette page.';
+
+/** Refuse les comptes qui peuvent seulement lire le Sheet (pas de modification possible). */
+function verifierDroitModification_() {
+  const ss = ouvrirBase_();
+  const email = utilisateur_();
+  if (!email) return; // compte inconnu de Google : la protection du Sheet s'applique quand même
+  let autorises;
+  try {
+    autorises = ss.getEditors().map(u => u.getEmail().toLowerCase());
+    if (ss.getOwner()) autorises.push(ss.getOwner().getEmail().toLowerCase());
+  } catch (e) { throw new Error(ACCES_REFUSE_); } // un simple lecteur n'a pas le droit de voir la liste
+  if (autorises.indexOf(email.toLowerCase()) === -1) throw new Error(ACCES_REFUSE_);
 }
 
 /** Ne fait rien si la base est déjà à jour (rapide). */

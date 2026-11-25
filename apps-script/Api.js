@@ -47,6 +47,7 @@ function avecVerrou_(fn) {
 /* ===================== Lecture ===================== */
 
 function chargerDonnees() {
+  verifierDroitModification_();
   verifierBaseSiBesoin_();
   const ss = ouvrirBase_();
   const emps = lireTable_('Salariés').filter(r => r['ID'] !== '').map(r => ({
