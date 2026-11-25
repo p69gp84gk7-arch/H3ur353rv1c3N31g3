@@ -96,14 +96,18 @@ L'**adresse du planning** est affichée dans le résumé du robot « Déployer v
 Le planning ne demande **pas** de compte Google et le Google Sheet n'a **pas** besoin d'être partagé :
 chaque chef se connecte avec un **identifiant et un mot de passe** propres à l'application.
 
-### Première fois : créer le compte administrateur
-1. Ouvrez le Google Sheet « Heures Service Neige – Base de données ».
-2. Menu **Heures Service Neige › Créer / réinitialiser le compte administrateur**
-   (Google peut demander une autorisation la première fois).
-3. Saisissez un identifiant, un nom affiché et un mot de passe (8 caractères minimum).
-4. Ouvrez l'adresse du planning et connectez-vous.
+### Première fois : créer le compte administrateur (sur la page)
+1. Ouvrez l'adresse du planning. Tant qu'aucun compte n'existe, la page affiche **« Première ouverture »**.
+2. Saisissez l'**adresse Gmail du propriétaire du Google Sheet** (elle sert seulement à vérifier
+   que c'est bien vous ; elle n'est pas enregistrée), puis un identifiant, un nom affiché et un mot de passe
+   (8 caractères minimum).
+3. **Créer le compte administrateur** : le planning s'ouvre.
 
-Ce menu sert aussi si vous oubliez votre mot de passe administrateur.
+Cette étape n'est possible **qu'une seule fois** : dès qu'un compte existe, la page ne propose plus que la connexion.
+Après 5 mauvaises adresses, elle est bloquée 15 minutes.
+
+**Mot de passe administrateur oublié** : dans le Google Sheet, menu
+**Heures Service Neige › Créer / réinitialiser le compte administrateur**.
 
 ### Ajouter un chef
 **Réglages › Comptes** : identifiant, nom, rôle « Chef », mot de passe → **Créer le compte**.

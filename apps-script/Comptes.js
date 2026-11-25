@@ -58,11 +58,46 @@ function creerAdministrateurDepuisMenu() {
   } catch (e) { ui.alert('Impossible : ' + e.message); }
 }
 
+/* ===================== Premier compte, créé depuis la page ===================== */
+
+/** La page demande si aucun compte n'existe encore (première ouverture). */
+function etatConnexion() { verifierBaseSiBesoin_(); return { installation: comptes_().length === 0 }; }
+
+/**
+ * Création du tout premier compte administrateur depuis la page, sans ouvrir le Google Sheet.
+ * Possible une seule fois (tant qu'aucun compte n'existe) et seulement en donnant l'adresse Gmail
+ * du propriétaire du Google Sheet, pour qu'une personne qui tomberait sur l'adresse de la page ne puisse pas la prendre.
+ */
+function creerPremierAdministrateur(emailProprietaire, id, nom, motDePasse, resterConnecte) {
+  verifierBaseSiBesoin_();
+  const props = PropertiesService.getScriptProperties(), cle = 'bloc_installation';
+  const bloc = JSON.parse(props.getProperty(cle) || '{"n":0,"t":0}');
+  const recent = Date.now() - bloc.t < BLOCAGE_MINUTES_ * 60000;
+  if (recent && bloc.n >= ESSAIS_MAX_) throw new Error('Trop d\'essais : réessayez dans ' + BLOCAGE_MINUTES_ + ' minutes.');
+  let proprio = '';
+  try { proprio = Session.getEffectiveUser().getEmail() || ''; } catch (e) { proprio = ''; }
+  if (!proprio) throw new Error("Impossible de vérifier le propriétaire : créez le compte depuis le Google Sheet (menu « Heures Service Neige › Créer / réinitialiser le compte administrateur »).");
+  if (String(emailProprietaire || '').trim().toLowerCase() !== proprio.toLowerCase()) {
+    props.setProperty(cle, JSON.stringify({ n: (recent ? bloc.n : 0) + 1, t: Date.now() }));
+    Utilities.sleep(400);
+    throw new Error("Ce n'est pas l'adresse Gmail du propriétaire du Google Sheet.");
+  }
+  verifierMotDePasse_(motDePasse);
+  avecVerrou_(() => {
+    if (comptes_().length) throw new Error('Un compte administrateur existe déjà : connectez-vous.');
+    creerCompte_(id, nom, 'admin', motDePasse);
+  });
+  props.deleteProperty(cle);
+  UTILISATEUR_COURANT = String(id).trim();
+  journaliser_('Comptes', 'Premier compte administrateur « ' + String(id).trim() + ' » créé depuis la page');
+  return connexion(id, motDePasse, resterConnecte);
+}
+
 /* ===================== Connexion / sessions ===================== */
 
 function connexion(identifiant, motDePasse, resterConnecte) {
   verifierBaseSiBesoin_();
-  if (!comptes_().length) throw new Error("Aucun compte n'existe encore : le propriétaire doit créer le compte administrateur depuis le Google Sheet (menu « Heures Service Neige › Créer le compte administrateur »).");
+  if (!comptes_().length) throw new Error("Aucun compte n'existe encore : rechargez la page pour créer le compte administrateur.");
   const props = PropertiesService.getScriptProperties(), cle = 'bloc_' + normId_(identifiant);
   const bloc = JSON.parse(props.getProperty(cle) || '{"n":0,"t":0}');
   const recent = Date.now() - bloc.t < BLOCAGE_MINUTES_ * 60000;
