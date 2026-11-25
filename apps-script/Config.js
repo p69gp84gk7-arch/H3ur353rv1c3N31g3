@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1XxH6M-GFu4T4znMcR0zhkvmvTTeoTQzN6MFwVMWgBFA',
   // À augmenter à chaque changement de la structure ci-dessous :
   // le programme ajoute alors lui-même les onglets / colonnes manquants.
-  SCHEMA_VERSION: 2,
+  SCHEMA_VERSION: 4,
 };
 
 /**
@@ -23,6 +23,7 @@ const SCHEMA = [
       { key: 'Travailleur de nuit' }, { key: 'Actif' },
       { key: 'Créé le', type: 'datetime' }, { key: 'Modifié le', type: 'datetime' },
       { key: 'Contrat' }, { key: "Date d'embauche", type: 'date' }, // v2
+      { key: 'Objectif annuel (h)' }, // v3 (vide = objectif par défaut des Règles)
     ],
   },
   {
@@ -47,6 +48,7 @@ const SCHEMA = [
       ['conges', 'Congés payés', '#a16207', 'Journée entière', true, 7, false, false],
       ['recup', 'Récupération', '#7e3fbf', 'Journée entière', true, 7, false, true],
       ['maladie', 'Maladie / absence', '#57534e', 'Journée entière', true, 7, false, false],
+      ['soli', 'Journée de solidarité', '#60a5fa', 'Journée entière', true, 7, false, false], // v3
     ],
   },
   {
@@ -67,8 +69,10 @@ const SCHEMA = [
       ['nuitFin', 6, 'h', 'La nuit finit à'],
       ['nuitMaxPoste', 8, 'h', 'Maxi par poste de nuit'],
       ['nuitMoy', 40, 'h', 'Maxi en moyenne (travailleur de nuit)'],
-      ['saisonDebut', '23/11/2026', 'date', 'Début de saison'],
-      ['saisonFin', '21/11/2027', 'date', 'Fin de saison'],
+      ['saisonDebut', '01/06/2026', 'date', 'Début de saison (année de contrat)'],
+      ['saisonFin', '31/05/2027', 'date', 'Fin de saison (année de contrat)'],
+      ['objectifAnnuel', 1607, 'h', 'Objectif annuel par défaut (modifiable par salarié)'],
+      ['plafondHS', 220, 'h', "Plafond annuel d'heures supplémentaires"], // v4
       ['pasGlisser', 30, 'min', 'Précision du glisser'],
     ],
   },
@@ -85,6 +89,8 @@ const SCHEMA = [
     name: 'Fériés',
     columns: [{ key: 'Date', type: 'date' }, { key: 'Nom' }, { key: 'Chômé' }],
     defaults: [
+      ['14/07/2026', 'Fête nationale', false], ['15/08/2026', 'Assomption', false],
+      ['01/11/2026', 'Toussaint', false], ['11/11/2026', 'Armistice', false],
       ['25/12/2026', 'Noël', false], ['01/01/2027', "Jour de l'an", false],
       ['29/03/2027', 'Lundi de Pâques', false], ['01/05/2027', 'Fête du travail', false],
       ['06/05/2027', 'Ascension', false], ['08/05/2027', 'Victoire 1945', false],
@@ -92,6 +98,26 @@ const SCHEMA = [
       ['15/08/2027', 'Assomption', false], ['01/11/2027', 'Toussaint', false],
       ['11/11/2027', 'Armistice', false],
     ],
+  },
+  {
+    // v3 : modèles de semaine (un horaire « 08:00-18:00 », « RH », un code, ou vide, pour chaque jour)
+    name: 'Modèles',
+    columns: [
+      { key: 'ID' }, { key: 'Nom' }, { key: 'Couleur' },
+      { key: 'Lun', type: 'texte' }, { key: 'Mar', type: 'texte' }, { key: 'Mer', type: 'texte' }, { key: 'Jeu', type: 'texte' },
+      { key: 'Ven', type: 'texte' }, { key: 'Sam', type: 'texte' }, { key: 'Dim', type: 'texte' },
+    ],
+    defaults: [
+      ['forte_hiver', 'Période forte – hiver (40h)', '#4c1d95', '08:30-17:30', '08:30-17:30', '08:30-17:30', '08:30-17:30', '08:30-17:30', 'RH', 'RH'],
+      ['forte_nov', 'Période forte – novembre (40h)', '#4c1d95', '08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', 'RH', 'RH'],
+      ['normale', 'Période normale (34h)', '#65a30d', '08:00-18:00', '08:00-18:00', '08:00-18:00', '08:00-16:00', 'RH', 'RH', 'RH'],
+    ],
+  },
+  {
+    // v4 : périodes de l'année et leur base hebdomadaire (en dehors : durée légale, 35h)
+    name: 'Périodes',
+    columns: [{ key: 'Nom' }, { key: 'Du', type: 'date' }, { key: 'Au', type: 'date' }, { key: 'Base hebdo (h)' }],
+    defaults: [['Période forte (hiver)', '02/11/2026', '28/03/2027', 40]],
   },
   {
     name: 'Journal',

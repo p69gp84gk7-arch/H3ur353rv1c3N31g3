@@ -135,7 +135,12 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .pcopy .btn{margin-top:8px;width:100%}
 
 /* --- récap --- */
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.perchip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:650;background:#ede9fe;color:#4c1d95;white-space:nowrap}
+.perchip.n{background:#ecfccb;color:#3f6212}
+.dep{width:100%;margin-top:12px}
+.dep td.v{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.legende-recap{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .kpi .k{font-size:12.5px;color:var(--muted)}
 .kpi .v{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
@@ -172,6 +177,25 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .pill.ok{background:var(--okbg);color:var(--ok)}
 .tabs-list{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .tabs-list span{background:#eef2f7;border-radius:6px;padding:3px 8px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:55;display:none;align-items:center;justify-content:center;padding:12px}
+.modal.on{display:flex}
+.mbox{background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.3);width:min(560px,100%);max-height:calc(100vh - 24px);display:flex;flex-direction:column;overflow:hidden}
+.mbox .mh{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.mbox .mb{padding:12px 16px;overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
+.mbox .mf{padding:10px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.mbox label.l{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.mbox select,.mbox input[type=text]{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--ink)}
+.mbox .dates{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mbox .dates input{width:130px;text-align:center}
+.mbox .emps{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px}
+.mbox .emps label{display:flex;gap:6px;align-items:center;font-size:13px}
+.mbox .apercu{background:#f6f7f9;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:12px}
+.mbox .jrs{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:6px}
+.mbox .jrs div{font-size:11px;text-align:center;border-radius:5px;padding:4px 2px;background:#eef2f7}
+.mbox .jrs div b{display:block;font-size:10px;color:var(--muted)}
+.mbox .jrs div[style*="background"] b{color:rgba(255,255,255,.85)}
+.modtab input.j{width:96px;text-align:center}
+@media (max-width:760px){.modal{align-items:flex-end;padding:0}.mbox{border-radius:16px 16px 0 0;max-height:90vh;width:100%}.mbox .emps{grid-template-columns:1fr}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
 .toast.on{opacity:1}
 
@@ -239,11 +263,13 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
     <div class="bar">
       <button class="btn" id="prev">◀</button>
       <div class="weeklabel" id="weeklabel"></div>
+      <span id="perChip"></span>
       <button class="btn" id="next">▶</button>
       <button class="btn desk-only" id="today">Cette semaine</button>
       <div class="chips desk-only" id="stationChips"></div>
       <select class="btn mob-only" id="stationSel" style="width:100%"></select>
       <div class="spacer desk-only"></div>
+      <button class="btn" id="openModele">📅 Appliquer un modèle</button>
       <button class="btn desk-only" id="copyPrev">Copier la semaine précédente</button>
     </div>
     <div class="mdays mob-only" id="mdays" style="display:none"></div>
@@ -265,13 +291,13 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
     <div class="kpis" id="kpis"></div>
     <div class="card">
       <h3>Compteur par salarié (saison)</h3>
-      <div class="sub">Chaque semaine est comparée à 35h. Solde = dépassements − heures manquantes − heures récupérées. Les semaines pas encore planifiées ne sont pas comptées.</div>
+      <div class="sub">Chaque semaine est comparée à <b>sa base</b> : 35h en période normale, 40h en période forte (Réglages › Périodes). La projection compare le total planifié de la saison à l'objectif annuel.</div>
       <div class="desk-only" style="overflow-x:auto"><table class="t" id="recapTable"></table></div>
       <div class="mob-only" id="recapCards"></div>
     </div>
     <div class="card">
-      <h3>Écart à 35h, semaine par semaine</h3>
-      <div class="sub">Rouge = heures manquantes · Orange = dépassement · Vert = 35h pile · Hachuré = pas encore planifié. Cliquez sur une case pour ouvrir la semaine.</div>
+      <h3>Écart à la base de la semaine (35h ou 40h), semaine par semaine</h3>
+      <div class="sub">Rouge = sous la base (heures en −) · Orange = au-dessus (heures en +) · Vert = pile la base · Hachuré = pas encore planifié. Cliquez sur une case pour ouvrir la semaine.</div>
       <div class="hm" id="heatmap"></div>
     </div>
   </section>
@@ -302,10 +328,22 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
         <div id="stationList"></div>
         <button class="btn" id="addStation" style="margin-top:8px">+ Ajouter une station</button>
       </div>
+      <div class="card wide">
+        <h3>Périodes de l'année (base hebdomadaire)</h3>
+        <div class="sub">Une semaine de période forte se compare à 40h, sans compter de dépassement jusque-là. En dehors de ces périodes, la base est la durée légale (35h). Un seul calendrier pour tout le service.</div>
+        <div style="overflow-x:auto"><table class="t" id="perTable"></table></div>
+        <button class="btn" id="addPer" style="margin-top:10px">+ Ajouter une période</button>
+      </div>
       <div class="card">
         <h3>Saison</h3>
         <div class="sub">Le récap et les cumuls portent sur cette période. Dates au format jj/mm/aaaa.</div>
         <div id="seasonForm"></div>
+      </div>
+      <div class="card wide">
+        <h3>Modèles de semaine</h3>
+        <div class="sub">Pour chaque jour : un horaire (ex. <b>08:00-18:00</b>, la pause repas est déduite automatiquement), <b>RH</b> pour un repos, un code (<b>CP</b>, <b>JF</b>, <b>SOLI</b>, <b>REC</b>, <b>MAL</b>), ou vide pour ne rien poser. Utilisés par le bouton « 📅 Appliquer un modèle » du planning.</div>
+        <div style="overflow-x:auto"><table class="t modtab" id="modTable"></table></div>
+        <button class="btn" id="addModele" style="margin-top:10px">+ Ajouter un modèle</button>
       </div>
       <div class="card wide">
         <h3>Jours fériés</h3>
@@ -324,6 +362,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 </main>
 
 <div class="pop" id="pop"></div>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -343,7 +382,7 @@ const mq = matchMedia('(max-width: 760px)');
 const isMob = () => mq.matches;
 const DEFAULT_RULES = { legale: 35, maxSem: 48, maxMoy: 44, moyN: 12, maxJour: 10, amplitude: 13,
   reposJour: 11, reposHebdo: 35, pauseAuto: 60, pauseSeuil: 6,
-  nuitDebut: 21, nuitFin: 6, nuitMaxPoste: 8, nuitMoy: 40, pasGlisser: 30 };
+  nuitDebut: 21, nuitFin: 6, nuitMaxPoste: 8, nuitMoy: 40, pasGlisser: 30, objectifAnnuel: 1607, plafondHS: 220 };
 const DEFAULT_TYPES = {
   travail_jour: { id:'travail_jour', nom:'Travail', couleur:'#2f6fdb', mode:'heures', compteur:true, effectif:true, forfait:0, deduit:false },
   travail_nuit: { id:'travail_nuit', nom:'Travail de nuit (auto)', couleur:'#33287f', mode:'heures', compteur:true, effectif:true, forfait:0, deduit:false },
@@ -351,7 +390,7 @@ const DEFAULT_TYPES = {
 const state = {
   week: 0, mday: 0, station: 'Toutes', tool: 'travail_jour', sel: null, step: 30, slots: {},
   stations: [], rules: { ...DEFAULT_RULES }, season: { start: 0, end: 51 },
-  feries: [], types: [DEFAULT_TYPES.travail_jour, DEFAULT_TYPES.travail_nuit], emps: [], sheetUrl: '', user: '',
+  feries: [], types: [DEFAULT_TYPES.travail_jour, DEFAULT_TYPES.travail_nuit], emps: [], modeles: [], periodes: [], sheetUrl: '', user: '',
 };
 function newId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
@@ -448,7 +487,7 @@ function onData(d) {
   state.stations = d.stations.length ? d.stations : ['Superbagnères', 'Le Mourtis', "Bourg d'Oueil"];
   state.types = d.types.slice();
   ['travail_nuit', 'travail_jour'].forEach(id => { if (!state.types.some(t => t.id === id)) state.types.unshift({ ...DEFAULT_TYPES[id] }); });
-  state.emps = d.emps; state.feries = d.feries;
+  state.emps = d.emps; state.feries = d.feries; state.modeles = d.modeles || []; state.periodes = d.periodes || [];
   state.rules = { ...DEFAULT_RULES };
   for (const k in d.rules) {
     const v = d.rules[k], n = Number(v);
@@ -474,7 +513,8 @@ function onData(d) {
 /* Enregistrement des créneaux : regroupé et envoyé ~0,7 s après la dernière modification */
 const pending = { ups: new Map(), dels: new Set() };
 let saveTimer = null, saving = false;
-function markSlot(s) { pending.dels.delete(s.id); pending.ups.set(s.id, { s, w: state.week }); scheduleSave(); }
+function markSlot(s, w = state.week) { pending.dels.delete(s.id); pending.ups.set(s.id, { s, w }); scheduleSave(); }
+function removeSlotW(s, w) { state.slots[w] = getSlots(w).filter(x => x !== s); pending.ups.delete(s.id); pending.dels.add(s.id); scheduleSave(); }
 function removeSlot(s) { state.slots[state.week] = getSlots(state.week).filter(x => x !== s); pending.ups.delete(s.id); pending.dels.add(s.id); scheduleSave(); }
 function scheduleSave(delay = 700) { setSync('pending', '… Enregistrement'); clearTimeout(saveTimer); saveTimer = setTimeout(flushSlots, delay); }
 function flushSlots() {
@@ -521,7 +561,7 @@ function flushSettings() {
       settingsTimer = setTimeout(flushSettings, 5000);
     })
     .enregistrerReglages({ emps: state.emps, stations: state.stations, types: state.types,
-      rules: { ...state.rules, pasGlisser: state.step }, feries: state.feries });
+      rules: { ...state.rules, pasGlisser: state.step }, feries: state.feries, modeles: state.modeles, periodes: state.periodes });
 }
 function waitThenReload() { if (saving || pending.ups.size || pending.dels.size) return setTimeout(waitThenReload, 300); init(); }
 window.addEventListener('beforeunload', ev => {
@@ -582,8 +622,18 @@ function analyze(e, w) {
   if (emp(e) && emp(e).nuit) { const an = avgN(nightPostOf, e, w, R.moyN); add('Nuit : moyenne sur ' + R.moyN + ' semaines', fmtH(an), '≤ ' + R.nuitMoy + 'h', an <= R.nuitMoy * 60); }
   const em = embaucheMin(emp(e), w);
   const avantEmb = em !== null && em >= WEEK;                       // semaine entière avant l'embauche
-  const cible = em === null || em <= 0 ? R.legale * 60 : avantEmb ? 0 : Math.round(R.legale * 60 * (WEEK - em) / WEEK); // prorata
-  return { counter, eff, night, ferieWorked, absences, recup, pauses, days, checks, alerts: checks.filter(c => !c.ok), ecart: counter - cible, cible, avantEmb };
+  let cible = 0; // base de la semaine (35h ou 40h selon la période), au prorata de l'embauche
+  for (let d = 0; d < 7; d++) if (em === null || d * DAY >= em) cible += baseJour(w, d);
+  cible = Math.round(cible);
+  // tous les dépassements, en heures
+  const dep = {
+    au35: Math.max(0, eff - R.legale * 60),                     // au-delà de la durée légale
+    au48: Math.max(0, eff - R.maxSem * 60),                     // au-delà du maxi hebdo
+    au10: days.reduce((t, D) => t + Math.max(0, D.work - R.maxJour * 60), 0), // au-delà de 10h/jour
+    moy: Math.max(0, avg - R.maxMoy * 60),                      // moyenne 12 semaines au-delà de 44h
+    dimanche: days[6].work, nuit: night, ferie: ferieWorked,
+  };
+  return { counter, eff, night, ferieWorked, absences, recup, pauses, days, checks, alerts: checks.filter(c => !c.ok), ecart: counter - cible, cible, avantEmb, dep };
 }
 
 /* ---------- morceaux d'affichage communs ---------- */
@@ -643,6 +693,8 @@ function renderPlanning() {
   const w = state.week, R = state.rules, d0 = weekDate(w), d6 = weekDate(w, 6);
   $('#weeklabel').textContent = isMob() ? `S${isoWeek(d0)} · ${fdShort(d0)} → ${fd(d6)}` : `Semaine ${isoWeek(d0)} · du lun. ${fd(d0)} au dim. ${fd(d6)}`;
   stationChips($('#stationChips'));
+  const pers = [...new Set([0, 1, 2, 3, 4, 5, 6].map(d => periodeDu(w, d)))];
+  $('#perChip').innerHTML = pers.map(p => p ? `<span class="perchip" title="du ${fdIso(p.du)} au ${fdIso(p.au)}">${esc(p.nom)} · ${p.base}h</span>` : `<span class="perchip n">Période normale · ${R.legale}h</span>`).join(' ');
   $('#stationSel').innerHTML = ['Toutes', ...state.stations].map(s => `<option value="${esc(s)}" ${s === state.station ? 'selected' : ''}>${s === 'Toutes' ? 'Toutes les stations' : esc(s)}</option>`).join('');
   $('#mdays').style.display = isMob() ? 'flex' : 'none';
   if (isMob()) return renderMobile();
@@ -652,7 +704,7 @@ function renderPlanning() {
     const f = ferieAt(w, d);
     h += `<div class="dh ${d >= 5 ? 'we' : ''} ${f ? 'fer' : ''}"><div class="dn">${DAYN[d]} <span>${fdShort(weekDate(w, d))}</span>${f ? `<b class="ferb ${f.chome ? '' : 'trav'}" title="${esc(f.nom)} — ${f.chome ? 'chômé' : 'travaillé'}">férié</b>` : ''}</div><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div></div>`;
   }
-  h += `</div><div class="sc">Heures<br>comptées</div><div class="sc">Écart<br>à ${R.legale}h</div><div class="sc">dont<br>nuit</div><div class="sc">Contrôles<br>RH</div></div>`;
+  h += `</div><div class="sc">Heures<br>comptées</div><div class="sc">Écart<br>à ${fmtH(baseSemaine(w))}</div><div class="sc">dont<br>nuit</div><div class="sc">Contrôles<br>RH</div></div>`;
   const list = visibleEmps(), stations = state.station === 'Toutes' ? state.stations : [state.station];
   let tot = 0, nAlert = 0;
   for (const st of stations) {
@@ -687,7 +739,13 @@ function detailHtml(e) {
     <div class="cols">
       <table class="t"><thead><tr><th>Règle</th><th class="n">Valeur</th><th class="n">Limite</th><th></th></tr></thead><tbody>${rows}</tbody></table>
       <table class="t"><thead><tr><th>Jour</th><th class="n">Travail</th><th class="n">Amplitude</th><th class="n">dont nuit</th></tr></thead><tbody>${dRows}</tbody></table>
-    </div>`;
+    </div>
+    <table class="t dep"><thead><tr><th colspan="2">Heures de la semaine</th><th colspan="2"></th></tr></thead><tbody>
+      <tr><td>Écart à la base (${fmtH(a.cible)})</td><td class="v">${a.avantEmb ? '—' : sgn(a.ecart)}</td><td>Au-delà de ${state.rules.legale}h (durée légale)</td><td class="v">${fmtH(a.dep.au35)}</td></tr>
+      <tr><td>Au-delà de ${state.rules.maxSem}h (maxi semaine)</td><td class="v" style="${a.dep.au48 ? 'color:var(--neg)' : ''}">${fmtH(a.dep.au48)}</td><td>Au-delà de ${state.rules.maxJour}h par jour (cumul)</td><td class="v" style="${a.dep.au10 ? 'color:var(--neg)' : ''}">${fmtH(a.dep.au10)}</td></tr>
+      <tr><td>Heures de nuit</td><td class="v">${fmtH(a.dep.nuit)}</td><td>Dimanche travaillé</td><td class="v">${fmtH(a.dep.dimanche)}</td></tr>
+      <tr><td>Fériés travaillés</td><td class="v">${fmtH(a.dep.ferie)}</td><td>Moyenne ${state.rules.moyN} sem. au-delà de ${state.rules.maxMoy}h</td><td class="v" style="${a.dep.moy ? 'color:var(--neg)' : ''}">${fmtH(a.dep.moy)}</td></tr>
+    </tbody></table>`;
 }
 
 /* ---------- PLANNING (smartphone) : un jour à la fois ---------- */
@@ -718,6 +776,11 @@ function renderMobile() {
 /* ---------- glisser (souris ou doigt) ---------- */
 let drag = null;
 const snap = m => Math.round(m / state.step) * state.step;
+/** Période (Réglages › Périodes) qui contient le jour d de la semaine w, ou null. */
+function periodeDu(w, d) { const k = iso(weekDate(w, d)); return state.periodes.find(p => p.du <= k && k <= p.au) || null; }
+/** Base du jour, en minutes : base hebdo de la période (ou durée légale) / 7. */
+function baseJour(w, d) { const p = periodeDu(w, d); return (p ? p.base : state.rules.legale) * 60 / 7; }
+function baseSemaine(w) { let b = 0; for (let d = 0; d < 7; d++) b += baseJour(w, d); return Math.round(b); }
 /** Minute (dans la semaine w) où commence le contrat d'un saisonnier ; null si permanent / pas de date. */
 function embaucheMin(e, w) {
   if (!e || e.contrat !== 'saisonnier') return null;
@@ -903,13 +966,17 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closePop()
 
 /* ---------- RÉCAP ---------- */
 function seasonStats(e) {
-  const S = state.season; let weeks = 0, tot = 0, neg = 0, pos = 0, night = 0, alerts = 0, recup = 0, fer = 0; const cells = [];
+  const S = state.season, z = { weeks: 0, tot: 0, neg: 0, pos: 0, recup: 0, alerts: 0, au35: 0, au48: 0, au10: 0, nuit: 0, dimanche: 0, ferie: 0 }; const cells = [];
   for (let w = S.start; w <= S.end; w++) {
     if (!getSlots(w).some(s => s.emp === e)) { cells.push(null); continue; }
-    const a = analyze(e, w); weeks++; tot += a.counter; night += a.night; alerts += a.alerts.length; recup += a.recup; fer += a.ferieWorked;
-    if (a.ecart < 0) neg -= a.ecart; else pos += a.ecart; cells.push(a.ecart);
+    const a = analyze(e, w); z.weeks++; z.tot += a.counter; z.alerts += a.alerts.length; z.recup += a.recup;
+    for (const k of ['au35', 'au48', 'au10', 'nuit', 'dimanche', 'ferie']) z[k] += a.dep[k];
+    if (a.avantEmb) { cells.push(null); continue; }
+    if (a.ecart < 0) z.neg -= a.ecart; else z.pos += a.ecart; cells.push(a.ecart);
   }
-  return { weeks, tot, neg, pos, recup, fer, solde: pos - neg - recup, night, alerts, cells, avg12: avgN(effOf, e, Math.min(state.week, S.end), state.rules.moyN) };
+  const objectif = (emp(e) && emp(e).objectif != null ? emp(e).objectif : state.rules.objectifAnnuel) * 60;
+  const reste = objectif - z.tot, surplus = Math.max(0, -reste);
+  return { ...z, cells, objectif, reste, surplus, auPlafond: Math.max(0, surplus - state.rules.plafondHS * 60), solde: z.pos - z.neg - z.recup };
 }
 function cellStyle(d) {
   if (d === 0) return 'background:#dcfce7;color:#166534';
@@ -917,26 +984,45 @@ function cellStyle(d) {
   return d > 0 ? `background:hsl(28 95% ${92 - k * 30}%);color:#7c2d12` : `background:hsl(0 85% ${93 - k * 28}%);color:#7f1d1d`;
 }
 const sgn = v => (v > 0 ? '+' : '') + fmtH(v);
+function projectionHtml(s) {
+  if (s.reste > 0) return `<span class="ecart neg" title="Il manque ${fmtH(s.reste)} pour atteindre l'objectif annuel">manque ${fmtH(s.reste)}</span>`;
+  if (s.surplus === 0) return '<span class="ecart zero">objectif atteint</span>';
+  return `<span class="ecart pos" title="Heures au-delà de l'objectif annuel${s.auPlafond ? ', dont ' + fmtH(s.auPlafond) + ' au-delà du plafond de ' + state.rules.plafondHS + 'h' : ''}">surplus ${fmtH(s.surplus)}</span>` +
+    (s.auPlafond ? `<div style="color:var(--neg);font-size:11px;font-weight:700">dont ${fmtH(s.auPlafond)} au-delà du plafond</div>` : '');
+}
 function renderRecap() {
-  const S = state.season;
+  const S = state.season, R = state.rules;
   $('#seasonLabel').textContent = `Saison du ${fd(weekDate(S.start))} au ${fd(weekDate(S.end, 6))}`;
   stationChips($('#stationChips2'));
   const st = visibleEmps().map(e => ({ e, s: seasonStats(e.id) })), sum = k => st.reduce((t, x) => t + x.s[k], 0);
+  const manque = st.reduce((t, x) => t + Math.max(0, x.s.reste), 0);
   $('#kpis').innerHTML = `
-    <div class="kpi"><div class="k">Heures comptées (saison)</div><div class="v">${fmtH(sum('tot'))}</div></div>
-    <div class="kpi"><div class="k">Dépassements cumulés</div><div class="v pos">+${fmtH(sum('pos'))}</div></div>
-    <div class="kpi"><div class="k">Heures manquantes cumulées</div><div class="v neg">${fmtH(-sum('neg'))}</div></div>
-    <div class="kpi"><div class="k">Alertes RH</div><div class="v ${sum('alerts') ? 'neg' : ''}">${sum('alerts')}</div></div>`;
-  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th class="n">Semaines</th><th class="n">Heures comptées</th><th class="n">Manquantes</th><th class="n">Dépassements</th><th class="n">Récupérées</th><th class="n">Solde</th><th class="n">Moy. ${state.rules.moyN} sem.</th><th class="n">Nuit</th><th class="n">Fériés travaillés</th><th class="n">Alertes</th></tr></thead><tbody>` +
-    st.map(({ e, s }) => `<tr><td><b>${esc(e.prenom)} ${esc(e.nom)}</b></td><td>${esc(e.station)}</td><td class="n">${s.weeks}</td><td class="n">${fmtH(s.tot)}</td><td class="n" style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</td><td class="n" style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</td><td class="n">${s.recup ? fmtH(s.recup) : '—'}</td><td class="n">${ecartHtml(s.solde)}</td><td class="n">${fmtH(s.avg12)}</td><td class="n">${fmtH(s.night)}</td><td class="n">${s.fer ? fmtH(s.fer) : '—'}</td><td class="n" style="${s.alerts ? 'color:var(--neg);font-weight:700' : ''}">${s.alerts || '—'}</td></tr>`).join('') + '</tbody>';
-  $('#recapCards').innerHTML = st.map(({ e, s }) => `<div class="rcard"><div class="top"><div><b>${esc(e.prenom)} ${esc(e.nom)}</b><div class="hint" style="font-size:12px">${esc(e.station)} · ${s.weeks} sem.</div></div><div>Solde ${ecartHtml(s.solde)}</div></div>
-    <div class="lines"><span>Comptées <b>${fmtH(s.tot)}</b></span><span>Manquantes <b style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</b></span><span>Dépassements <b style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</b></span><span>Récupérées <b>${s.recup ? fmtH(s.recup) : '—'}</b></span><span>Nuit <b>${fmtH(s.night)}</b></span><span>Alertes <b style="${s.alerts ? 'color:var(--neg)' : ''}">${s.alerts || '—'}</b></span></div></div>`).join('');
+    <div class="kpi"><div class="k">Heures planifiées / objectif annuel</div><div class="v">${fmtH(sum('tot'))} <span style="font-size:14px;color:var(--muted)">/ ${fmtH(sum('objectif'))}</span></div></div>
+    <div class="kpi"><div class="k">Heures en + (au-delà de la base)</div><div class="v pos">${sum('pos') ? '+' : ''}${fmtH(sum('pos'))}</div></div>
+    <div class="kpi"><div class="k">Heures en − (sous la base)</div><div class="v neg">${fmtH(-sum('neg'))}</div></div>
+    <div class="kpi"><div class="k">Fin de saison : heures qui manqueront</div><div class="v ${manque ? 'neg' : ''}">${fmtH(manque)}</div></div>
+    <div class="kpi"><div class="k">Fin de saison : surplus</div><div class="v ${sum('surplus') ? 'pos' : ''}">${fmtH(sum('surplus'))}</div></div>`;
+  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th class="n">Objectif</th><th class="n">Planifié</th><th class="n">Fin de saison</th><th class="n">Heures en +</th><th class="n">Heures en −</th><th class="n">Solde</th><th class="n">Au-delà de ${R.legale}h</th><th class="n">Au-delà de ${R.maxSem}h</th><th class="n">Au-delà de ${R.maxJour}h/jour</th><th class="n">Nuit</th><th class="n">Dimanches</th><th class="n">Fériés trav.</th><th class="n">Alertes</th></tr></thead><tbody>` +
+    st.map(({ e, s }) => `<tr><td><b>${esc(e.prenom)} ${esc(e.nom)}</b>${e.contrat === 'saisonnier' ? ' <span class="nb sais">saisonnier</span>' : ''}</td><td>${esc(e.station)}</td>
+      <td class="n">${fmtH(s.objectif)}</td><td class="n">${fmtH(s.tot)}</td><td class="n">${projectionHtml(s)}</td>
+      <td class="n" style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</td><td class="n" style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</td>
+      <td class="n" title="${s.recup ? 'dont ' + fmtH(s.recup) + ' de récupération déjà prise' : ''}">${ecartHtml(s.solde)}</td>
+      <td class="n">${s.au35 ? fmtH(s.au35) : '—'}</td><td class="n" style="${s.au48 ? 'color:var(--neg);font-weight:700' : ''}">${s.au48 ? fmtH(s.au48) : '—'}</td><td class="n" style="${s.au10 ? 'color:var(--neg);font-weight:700' : ''}">${s.au10 ? fmtH(s.au10) : '—'}</td>
+      <td class="n">${s.nuit ? fmtH(s.nuit) : '—'}</td><td class="n">${s.dimanche ? fmtH(s.dimanche) : '—'}</td><td class="n">${s.ferie ? fmtH(s.ferie) : '—'}</td>
+      <td class="n" style="${s.alerts ? 'color:var(--neg);font-weight:700' : ''}">${s.alerts || '—'}</td></tr>`).join('') + '</tbody>' +
+    `<caption style="caption-side:bottom;text-align:left"><div class="legende-recap"><b>Fin de saison</b> : planifié comparé à l'objectif annuel (manque ou surplus ; au-delà du plafond de ${R.plafondHS}h signalé en rouge). <b>Heures en + / en −</b> : écart de chaque semaine à sa base (35h ou 40h). <b>Solde</b> = heures en + − heures en − − récupération. <b>Au-delà de ${R.legale}h / ${R.maxSem}h / ${R.maxJour}h par jour</b> : heures de travail effectif au-delà de ces seuils (règles RH).</div></caption>`;
+  $('#recapCards').innerHTML = st.map(({ e, s }) => `<div class="rcard"><div class="top"><div><b>${esc(e.prenom)} ${esc(e.nom)}</b><div class="hint" style="font-size:12px">${esc(e.station)} · ${s.weeks} sem.</div></div><div>${projectionHtml(s)}</div></div>
+    <div class="lines"><span>Planifié <b>${fmtH(s.tot)}</b> / ${fmtH(s.objectif)}</span><span>Solde ${ecartHtml(s.solde)}</span>
+      <span>Heures en + <b style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</b></span><span>Heures en − <b style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</b></span>
+      <span>Au-delà de ${R.legale}h <b>${s.au35 ? fmtH(s.au35) : '—'}</b></span><span>Au-delà de ${R.maxSem}h <b style="${s.au48 ? 'color:var(--neg)' : ''}">${s.au48 ? fmtH(s.au48) : '—'}</b></span>
+      <span>Au-delà de ${R.maxJour}h/j <b style="${s.au10 ? 'color:var(--neg)' : ''}">${s.au10 ? fmtH(s.au10) : '—'}</b></span><span>Nuit <b>${s.nuit ? fmtH(s.nuit) : '—'}</b></span>
+      <span>Dimanches <b>${s.dimanche ? fmtH(s.dimanche) : '—'}</b></span><span>Alertes <b style="${s.alerts ? 'color:var(--neg)' : ''}">${s.alerts || '—'}</b></span></div></div>`).join('');
   let h = '<table><thead><tr><th></th>';
-  for (let w = S.start; w <= S.end; w++) h += `<th class="${w === state.week ? 'cur' : ''}" title="du ${fd(weekDate(w))} au ${fd(weekDate(w, 6))}">S${isoWeek(weekDate(w))}</th>`;
+  for (let w = S.start; w <= S.end; w++) { const b = baseSemaine(w); h += `<th class="${w === state.week ? 'cur' : ''}" title="du ${fd(weekDate(w))} au ${fd(weekDate(w, 6))} · base ${fmtH(b)}">S${isoWeek(weekDate(w))}${b !== R.legale * 60 ? '<br><span style="color:#6d28d9">' + Math.round(b / 60) + 'h</span>' : ''}</th>`; }
   h += '</tr></thead><tbody>';
   for (const { e, s } of st) {
     h += `<tr><td class="nm">${esc(e.prenom)} ${esc(e.nom[0])}.</td>`;
-    s.cells.forEach((d, i) => { const w = S.start + i, cur = w === state.week ? 'cur' : '', tt = `S${isoWeek(weekDate(w))} (${fd(weekDate(w))})`; h += d == null ? `<td class="c np ${cur}" data-w="${w}" title="${tt} : pas encore planifié">·</td>` : `<td class="c ${cur}" data-w="${w}" style="${cellStyle(d)}" title="${tt} : ${d === 0 ? 'pile 35h' : sgn(d)}">${d === 0 ? '0' : (d > 0 ? '+' : '') + Math.round(d / 60)}</td>`; });
+    s.cells.forEach((d, i) => { const w = S.start + i, cur = w === state.week ? 'cur' : '', tt = `S${isoWeek(weekDate(w))} (${fd(weekDate(w))}) · base ${fmtH(baseSemaine(w))}`; h += d == null ? `<td class="c np ${cur}" data-w="${w}" title="${tt} : pas encore planifié">·</td>` : `<td class="c ${cur}" data-w="${w}" style="${cellStyle(d)}" title="${tt} : ${d === 0 ? 'pile la base' : sgn(d)}">${d === 0 ? '0' : (d > 0 ? '+' : '') + Math.round(d / 60)}</td>`; });
     h += '</tr>';
   }
   $('#heatmap').innerHTML = h + '</tbody></table>';
@@ -944,20 +1030,36 @@ function renderRecap() {
 $('#heatmap').addEventListener('click', ev => { const c = ev.target.closest('td[data-w]'); if (!c) return; state.week = +c.dataset.w; showTab('planning'); });
 
 /* ---------- RÉGLAGES ---------- */
+function renderModeles() {
+  $('#modTable').innerHTML = '<thead><tr><th>Nom</th><th>Couleur</th>' + DAYN.map(d => `<th>${d}</th>`).join('') + '<th>Total</th><th></th></tr></thead><tbody>' +
+    state.modeles.map(m => `<tr data-m="${esc(m.id)}"><td><input type="text" data-mf="nom" value="${esc(m.nom)}"></td><td><input type="color" data-mf="couleur" value="${esc(m.couleur)}"></td>` +
+      m.jours.map((v, j) => `<td><input type="text" class="j" data-mf="jour" data-j="${j}" value="${esc(v)}" placeholder="—"></td>`).join('') +
+      `<td class="n"><b>${fmtH(totalModele(m))}</b></td><td><button class="icon" data-del-mod="${esc(m.id)}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
+}
+function renderPeriodes() {
+  $('#perTable').innerHTML = '<thead><tr><th>Nom</th><th>Du</th><th>Au</th><th>Base hebdo (h)</th><th></th></tr></thead><tbody>' +
+    state.periodes.map((p, i) => `<tr data-p="${i}"><td><input type="text" data-pf="nom" value="${esc(p.nom)}"></td>
+      <td><input type="text" class="date" data-pf="du" value="${fdIso(p.du)}" placeholder="jj/mm/aaaa"></td>
+      <td><input type="text" class="date" data-pf="au" value="${fdIso(p.au)}" placeholder="jj/mm/aaaa"></td>
+      <td><input type="number" min="0" step="0.5" data-pf="base" value="${p.base}"></td>
+      <td><button class="icon" data-del-per="${i}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
+}
 function renderSettings() {
+  renderModeles(); renderPeriodes();
   $('#sheetInfo').innerHTML = state.sheetUrl ? `<a href="${esc(state.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a> <span class="hint">· connecté : ${esc(state.user || '—')}</span>` : '';
-  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
+  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Objectif annuel (h)</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
     state.emps.map(e => `<tr data-e="${e.id}"><td><input type="text" data-f="prenom" value="${esc(e.prenom)}"></td><td><input type="text" data-f="nom" value="${esc(e.nom)}"></td>
       <td><select data-f="station">${state.stations.map(s => `<option ${s === e.station ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></td>
       <td><input type="text" data-f="poste" value="${esc(e.poste)}"></td>
       <td><select data-f="contrat"><option value="permanent" ${e.contrat !== 'saisonnier' ? 'selected' : ''}>Permanent</option><option value="saisonnier" ${e.contrat === 'saisonnier' ? 'selected' : ''}>Saisonnier</option></select></td>
       <td>${e.contrat === 'saisonnier' ? `<input type="text" class="date" data-f="embauche" placeholder="jj/mm/aaaa" value="${esc(e.embauche || '')}">` : '<span class="hint">—</span>'}</td>
+      <td><input type="number" min="0" step="1" data-f="objectif" value="${e.objectif == null ? '' : e.objectif}" placeholder="${state.rules.objectifAnnuel}" title="Vide = objectif par défaut (${state.rules.objectifAnnuel}h)"></td>
       <td style="text-align:center"><input type="checkbox" data-f="nuit" ${e.nuit ? 'checked' : ''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="actif" ${e.actif ? 'checked' : ''}></td>
       <td><button class="icon" data-del-emp="${e.id}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
   const R = state.rules, r = (k, label, u = 'h') => `<div class="rule"><span>${label}</span><span><input type="number" min="0" step="0.5" data-rule="${k}" value="${R[k]}"><span class="u">${u}</span></span></div>`;
   $('#rules').innerHTML = `
-    <div><h4>Durées de travail</h4>${r('legale', 'Durée légale par semaine')}${r('maxSem', 'Maxi sur une semaine')}${r('maxMoy', 'Maxi en moyenne')}${r('moyN', '… calculée sur', 'sem.')}${r('maxJour', 'Maxi sur une journée')}${r('amplitude', 'Amplitude maxi d\'une journée')}</div>
+    <div><h4>Durées de travail</h4>${r('legale', 'Durée légale par semaine')}${r('maxSem', 'Maxi sur une semaine')}${r('maxMoy', 'Maxi en moyenne')}${r('moyN', '… calculée sur', 'sem.')}${r('maxJour', 'Maxi sur une journée')}${r('amplitude', 'Amplitude maxi d\'une journée')}${r('objectifAnnuel', 'Objectif annuel par défaut')}${r('plafondHS', 'Plafond annuel d\'heures sup.')}</div>
     <div><h4>Repos minimum</h4>${r('reposJour', 'Repos entre 2 journées')}${r('reposHebdo', 'Repos hebdomadaire d\'affilée')}
       <h4 class="mt">Pause repas automatique</h4>${r('pauseAuto', 'Durée de la pause', 'min')}${r('pauseSeuil', 'Si le créneau dépasse')}</div>
     <div><h4>Travail de nuit</h4>${r('nuitDebut', 'La nuit commence à')}${r('nuitFin', 'La nuit finit à')}${r('nuitMaxPoste', 'Maxi par poste de nuit')}${r('nuitMoy', 'Maxi en moyenne (travailleur de nuit)')}</div>`;
@@ -986,6 +1088,21 @@ $('#v-reglages').addEventListener('change', ev => {
     if (t.value.trim() && !d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); }
     e.embauche = d ? fd(d) : '';
   }
+  else if (t.dataset.pf) {
+    const per = state.periodes[+t.closest('tr').dataset.p], f = t.dataset.pf;
+    if (f === 'du' || f === 'au') { const d = parseFd(t.value); if (!d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); } per[f] = iso(d); if (per.au < per.du) toast('Attention : la date de fin est avant la date de début.'); }
+    else per[f] = f === 'base' ? Math.max(0, +t.value) : t.value;
+  }
+  else if (t.dataset.f === 'objectif') { const e = emp(t.closest('tr').dataset.e); e.objectif = t.value === '' ? null : Math.max(0, +t.value); }
+  else if (t.dataset.mf) {
+    const m = state.modeles.find(x => x.id === t.closest('tr').dataset.m);
+    if (t.dataset.mf === 'jour') {
+      const v = t.value.trim().toUpperCase().replace(/\s+/g, '').replace(/(\d{1,2})H(?!\d)/g, '$1:00').replace(/(\d)H(\d)/g, '$1:$2').replace(/–/g, '-');
+      if (v && !lireCaseModele(v)) { toast('Valeur non reconnue : écrivez par ex. 08:00-18:00, RH, CP, JF, SOLI, REC, MAL ou laissez vide.'); return renderSettings(); }
+      const lu = lireCaseModele(v);
+      m.jours[+t.dataset.j] = lu && lu.debut !== undefined ? tv(lu.debut) + '-' + tv(lu.fin) : v; // toujours au format 08:00-18:00
+    } else m[t.dataset.mf] = t.value;
+  }
   else if (t.dataset.f) { const e = emp(t.closest('tr').dataset.e); e[t.dataset.f] = t.type === 'checkbox' ? t.checked : t.value; }
   else if (t.dataset.rule) state.rules[t.dataset.rule] = +t.value;
   else if (t.dataset.tf) { const ty = type(t.closest('tr').dataset.t); ty[t.dataset.tf] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? +t.value : t.value; if (ty.mode === 'jour') ty.effectif = false; else ty.deduit = false; }
@@ -1007,11 +1124,116 @@ $('#v-reglages').addEventListener('click', ev => {
   else if (t.dataset.delSt) { const s = state.stations[+t.dataset.delSt]; if (state.emps.some(e => e.station === s)) return toast('Déplacez d\'abord les salariés de cette station.'); state.stations.splice(+t.dataset.delSt, 1); }
   else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '' });
   else if (t.id === 'addType') state.types.push({ id: 'type_' + newId().slice(1), nom: 'Nouveau type', couleur: '#0891b2', mode: 'heures', compteur: true, effectif: true, forfait: 0, deduit: false });
+  else if (t.dataset.delPer) state.periodes.splice(+t.dataset.delPer, 1);
+  else if (t.id === 'addPer') state.periodes.push({ nom: 'Période forte', du: iso(weekDate(state.week)), au: iso(weekDate(state.week + 4, 6)), base: 40 });
+  else if (t.dataset.delMod) { if (!confirm('Supprimer ce modèle ? (les créneaux déjà posés ne changent pas)')) return; state.modeles = state.modeles.filter(m => m.id !== t.dataset.delMod); }
+  else if (t.id === 'addModele') state.modeles.push({ id: 'mod_' + newId().slice(1), nom: 'Nouveau modèle', couleur: '#64748b', jours: ['08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', 'RH', 'RH'] });
   else if (t.id === 'addFer') state.feries.push({ d: iso(new Date()), nom: 'Nouveau jour férié', chome: false });
   else if (t.id === 'addStation') state.stations.push('Nouvelle station');
   else return;
   renderAll(); saveSettings();
 });
+
+/* ---------- modèles de semaine ---------- */
+const CODES_MODELE = { RH: 'repos_hebdo', CP: 'conges', JF: 'ferie', SOLI: 'soli', REC: 'recup', MAL: 'maladie', FORM: 'formation' };
+/** Lit une case de modèle : { type, debut, fin } en minutes dans la journée, ou null si illisible. */
+function lireCaseModele(v) {
+  v = String(v || '').trim().toUpperCase();
+  if (!v) return null;
+  if (CODES_MODELE[v]) return { code: v, type: CODES_MODELE[v] };
+  const m = /^(\d{1,2})[:H](\d{2})-(\d{1,2})[:H](\d{2})$/.exec(v.replace(/\s+/g, ''));
+  if (!m) return null;
+  const a = +m[1] * 60 + +m[2]; let b = +m[3] * 60 + +m[4];
+  if (a >= DAY || b > DAY || +m[2] > 59 || +m[4] > 59) return null;
+  if (b <= a) b += DAY; // finit le lendemain (nuit)
+  return { type: 'travail_jour', debut: a, fin: b };
+}
+function totalModele(m) {
+  let t = 0;
+  m.jours.forEach(v => { const c = lireCaseModele(v); if (!c) return;
+    if (c.debut !== undefined) t += workMin({ type: 'travail_jour', start: c.debut, end: c.fin });
+    else { const ty = state.types.find(x => x.id === c.type); if (ty && ty.compteur) t += ty.forfait * 60; } });
+  return t;
+}
+/** Pose un modèle pour des salariés sur une période. Renvoie { faits, ignores, remplaces }. */
+function appliquerModele(m, salaries, du, au, remplacer) {
+  let faits = 0, ignores = 0, remplaces = 0;
+  for (let d = new Date(du); d <= au; d.setDate(d.getDate() + 1)) {
+    const di = dayIndex(d), w = Math.floor(di / 7), j = di - w * 7;
+    const c = lireCaseModele(m.jours[j]);
+    if (!c) continue;
+    const f = ferieAt(w, j);
+    for (const eId of salaries) {
+      const e = emp(eId);
+      const em = embaucheMin(e, w);
+      if (em !== null && j * DAY < em) { ignores++; continue; } // avant l'embauche
+      if (f && f.chome && c.debut !== undefined) { ignores++; continue; } // férié chômé : pas de travail
+      const cand = c.debut !== undefined
+        ? autoType({ emp: eId, type: 'travail_jour', start: j * DAY + c.debut, end: j * DAY + c.fin })
+        : { emp: eId, type: c.type, start: j * DAY, end: (j + 1) * DAY };
+      if (!state.types.some(t => t.id === cand.type) && !isWork(cand)) { ignores++; continue; }
+      const memeJour = getSlots(w).filter(s => s.emp === eId && Math.floor(s.start / DAY) === j);
+      if (remplacer) memeJour.forEach(s => { removeSlotW(s, w); remplaces++; });
+      else {
+        const lay = type(cand.type).mode;
+        if (getSlots(w).some(s => s.emp === eId && type(s.type).mode === lay && s.start < cand.end && cand.start < s.end)) { ignores++; continue; }
+      }
+      const s = { id: newId(), ...cand };
+      getSlots(w).push(s); markSlot(s, w); faits++;
+    }
+  }
+  return { faits, ignores, remplaces };
+}
+function ouvrirModele() {
+  if (!state.modeles.length) return toast('Créez d\'abord un modèle dans Réglages › Modèles de semaine.');
+  const list = visibleEmps();
+  const choisis = new Set(state.sel && list.some(e => e.id === state.sel) ? [state.sel] : []);
+  const lundi = weekDate(state.week), dimanche = weekDate(state.week, 6);
+  $('#mbox').innerHTML = `<div class="mh"><span>📅 Appliquer un modèle de semaine</span><button class="icon" id="mX">✕</button></div>
+    <div class="mb">
+      <label class="l">Modèle</label>
+      <select id="mMod" style="width:100%">${state.modeles.map(m => `<option value="${esc(m.id)}">${esc(m.nom)} — ${fmtH(totalModele(m))} / semaine</option>`).join('')}</select>
+      <div class="jrs" id="mJrs"></div>
+      <label class="l">Période (jj/mm/aaaa)</label>
+      <div class="dates">du <input type="text" id="mDu" value="${fd(lundi)}"> au <input type="text" id="mAu" value="${fd(dimanche)}">
+        <button class="btn sm" id="mSem">Cette semaine</button><button class="btn sm" id="mSaison">Jusqu'à fin de saison</button></div>
+      <label class="l">Salariés <a href="#" id="mTous" style="font-size:12px">tout cocher</a></label>
+      <div class="emps">${list.map(e => `<label><input type="checkbox" data-me="${esc(e.id)}" ${choisis.has(e.id) ? 'checked' : ''}>${esc(e.prenom)} ${esc(e.nom)}</label>`).join('') || '<span class="hint">Aucun salarié</span>'}</div>
+      <label style="display:flex;gap:6px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" id="mRemp"> Remplacer ce qui existe déjà sur ces jours</label>
+      <div class="apercu" id="mApercu"></div>
+    </div>
+    <div class="mf"><button class="btn" id="mAnnuler">Annuler</button><button class="btn primary" id="mOk">Appliquer</button></div>`;
+  $('#modal').classList.add('on');
+  const lire = () => ({ m: state.modeles.find(x => x.id === $('#mMod').value), du: parseFd($('#mDu').value), au: parseFd($('#mAu').value),
+    sal: [...document.querySelectorAll('[data-me]:checked')].map(x => x.dataset.me), remp: $('#mRemp').checked });
+  const maj = () => {
+    const v = lire();
+    $('#mJrs').innerHTML = v.m.jours.map((x, i) => `<div style="${x && x !== 'RH' ? `background:${esc(v.m.couleur)};color:#fff` : ''}"><b>${DAYN[i]}</b>${esc(x || '—')}</div>`).join('');
+    if (!v.du || !v.au || v.au < v.du) { $('#mApercu').innerHTML = '⚠ Vérifiez les dates (jj/mm/aaaa, « au » après « du »).'; return; }
+    const jours = Math.round((v.au - v.du) / 864e5) + 1;
+    $('#mApercu').innerHTML = `<b>${v.sal.length}</b> salarié(s) × <b>${jours}</b> jour(s) (${Math.ceil(jours / 7)} sem.) — ${fmtH(totalModele(v.m))} par semaine complète. `
+      + (v.remp ? 'Ce qui existe sur ces jours sera <b>remplacé</b>.' : 'Les jours déjà remplis sont <b>gardés</b>.');
+  };
+  ['mMod', 'mDu', 'mAu', 'mRemp'].forEach(id => $('#' + id).addEventListener('change', maj));
+  $('#mbox').addEventListener('change', ev => { if (ev.target.dataset.me !== undefined) maj(); });
+  $('#mSem').onclick = () => { $('#mDu').value = fd(lundi); $('#mAu').value = fd(dimanche); maj(); };
+  $('#mSaison').onclick = () => { $('#mDu').value = fd(lundi); $('#mAu').value = fd(weekDate(state.season.end, 6)); maj(); };
+  $('#mTous').onclick = ev => { ev.preventDefault(); const cs = document.querySelectorAll('[data-me]'); const tout = [...cs].every(c => c.checked); cs.forEach(c => { c.checked = !tout; }); maj(); };
+  $('#mX').onclick = $('#mAnnuler').onclick = fermerModele;
+  $('#mOk').onclick = () => {
+    const v = lire();
+    if (!v.du || !v.au || v.au < v.du) return toast('Vérifiez les dates (jj/mm/aaaa).');
+    if (!v.sal.length) return toast('Cochez au moins un salarié.');
+    if ((v.au - v.du) / 864e5 > 400) return toast('Période trop longue (plus d\'un an).');
+    const r = appliquerModele(v.m, v.sal, v.du, v.au, v.remp);
+    fermerModele(); renderAll();
+    toast(`${r.faits} créneau${r.faits > 1 ? 'x' : ''} posé${r.faits > 1 ? 's' : ''}` + (r.remplaces ? ` · ${r.remplaces} remplacé(s)` : '') + (r.ignores ? ` · ${r.ignores} ignoré(s) (déjà rempli, avant embauche ou férié chômé)` : ''));
+  };
+  maj();
+}
+function fermerModele() { $('#modal').classList.remove('on'); }
+$('#openModele').onclick = ouvrirModele;
+$('#modal').addEventListener('click', ev => { if (ev.target.id === 'modal') fermerModele(); });
 
 /* ---------- navigation ---------- */
 function renderAll() { renderTools(); renderPlanning(); renderRecap(); renderSettings(); }
