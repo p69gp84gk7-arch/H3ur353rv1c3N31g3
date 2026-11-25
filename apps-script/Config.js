@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1XxH6M-GFu4T4znMcR0zhkvmvTTeoTQzN6MFwVMWgBFA',
   // À augmenter à chaque changement de la structure ci-dessous :
   // le programme ajoute alors lui-même les onglets / colonnes manquants.
-  SCHEMA_VERSION: 3,
+  SCHEMA_VERSION: 4,
 };
 
 /**
@@ -72,6 +72,7 @@ const SCHEMA = [
       ['saisonDebut', '01/06/2026', 'date', 'Début de saison (année de contrat)'],
       ['saisonFin', '31/05/2027', 'date', 'Fin de saison (année de contrat)'],
       ['objectifAnnuel', 1607, 'h', 'Objectif annuel par défaut (modifiable par salarié)'],
+      ['plafondHS', 220, 'h', "Plafond annuel d'heures supplémentaires"], // v4
       ['pasGlisser', 30, 'min', 'Précision du glisser'],
     ],
   },
@@ -111,6 +112,12 @@ const SCHEMA = [
       ['forte_nov', 'Période forte – novembre (40h)', '#4c1d95', '08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', 'RH', 'RH'],
       ['normale', 'Période normale (34h)', '#65a30d', '08:00-18:00', '08:00-18:00', '08:00-18:00', '08:00-16:00', 'RH', 'RH', 'RH'],
     ],
+  },
+  {
+    // v4 : périodes de l'année et leur base hebdomadaire (en dehors : durée légale, 35h)
+    name: 'Périodes',
+    columns: [{ key: 'Nom' }, { key: 'Du', type: 'date' }, { key: 'Au', type: 'date' }, { key: 'Base hebdo (h)' }],
+    defaults: [['Période forte (hiver)', '02/11/2026', '28/03/2027', 40]],
   },
   {
     name: 'Journal',

@@ -82,8 +82,11 @@ function chargerDonnees() {
     id: String(r['ID']), nom: String(r['Nom']), couleur: String(r['Couleur']) || '#64748b',
     jours: JOURS.map(j => (r[j] instanceof Date ? versTexte_(r[j], 'HH:mm') : String(r[j] == null ? '' : r[j]).trim())),
   }));
+  const periodes = lireTable_('Périodes').filter(r => r['Du'] instanceof Date && r['Au'] instanceof Date).map(r => ({
+    nom: String(r['Nom']), du: versTexte_(r['Du'], 'yyyy-MM-dd'), au: versTexte_(r['Au'], 'yyyy-MM-dd'), base: Number(r['Base hebdo (h)']) || 35,
+  }));
   return {
-    emps, stations, types, rules, feries, creneaux, modeles,
+    emps, stations, types, rules, feries, creneaux, modeles, periodes,
     utilisateur: utilisateur_(), sheetUrl: ss.getUrl(), aujourdhui: versTexte_(new Date(), 'yyyy-MM-dd'),
   };
 }
@@ -139,6 +142,9 @@ function enregistrerReglages(r) {
       'Créé le': anciens[String(e.id)] || maintenant, 'Modifié le': maintenant,
     })));
     ecrireTable_('Stations', (r.stations || []).map((s, i) => ({ 'Nom': s, 'Ordre': i + 1 })));
+    if (r.periodes) ecrireTable_('Périodes', r.periodes.filter(p => /^\d{4}-\d{2}-\d{2}$/.test(p.du) && /^\d{4}-\d{2}-\d{2}$/.test(p.au))
+      .sort((a, b) => a.du.localeCompare(b.du))
+      .map(p => ({ 'Nom': p.nom, 'Du': versDate_(p.du, 'yyyy-MM-dd'), 'Au': versDate_(p.au, 'yyyy-MM-dd'), 'Base hebdo (h)': Number(p.base) || 35 })));
     if (r.modeles) ecrireTable_('Modèles', r.modeles.map(m => {
       const o = { 'ID': m.id, 'Nom': m.nom, 'Couleur': m.couleur };
       ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach((j, i) => { o[j] = String((m.jours || [])[i] || ''); });

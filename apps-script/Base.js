@@ -124,6 +124,10 @@ function mettreAJourBase() {
 
 /** Corrections de données lors d'un changement de version. Ajoute ou corrige, ne supprime jamais. */
 function migrer_(ss, avant, changements) {
+  if (avant < 4) { // plafond annuel d'heures sup (l'onglet Périodes est créé avec ses valeurs de départ)
+    const d = SCHEMA.filter(x => x.name === 'Règles')[0];
+    ajouterSiAbsent_(ss, 'Règles', 'Clé', d.defaults.map(l => { const o = {}; d.columns.forEach((c, i) => { o[c.key] = texteVersDate_(l[i]); }); return o; }), changements);
+  }
   if (avant < 3) {
     const def = nom => SCHEMA.filter(d => d.name === nom)[0];
     const objet = (d, ligne) => { const o = {}; d.columns.forEach((c, i) => { o[c.key] = texteVersDate_(ligne[i]); }); return o; };
