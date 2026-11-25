@@ -124,6 +124,7 @@ function mettreAJourBase() {
 
 /** Corrections de données lors d'un changement de version. Ajoute ou corrige, ne supprime jamais. */
 function migrer_(ss, avant, changements) {
+  if (avant < 5) remplirSiVide_(ss, 'Types', 'ID', 'Abréviations', {"travail_jour": "", "travail_nuit": "", "formation": "FORM, FORMATION", "astreinte": "AST, ASTREINTE", "repos_hebdo": "RH, REPOS", "ferie": "JF, FERIE", "conges": "CP, CA, CONGES", "recup": "REC, RECUP, RTT", "maladie": "MAL, MALADIE, ABSENCE", "soli": "SOLI, SOLIDARITE"}, changements);
   if (avant < 4) { // plafond annuel d'heures sup (l'onglet Périodes est créé avec ses valeurs de départ)
     const d = SCHEMA.filter(x => x.name === 'Règles')[0];
     ajouterSiAbsent_(ss, 'Règles', 'Clé', d.defaults.map(l => { const o = {}; d.columns.forEach((c, i) => { o[c.key] = texteVersDate_(l[i]); }); return o; }), changements);
@@ -145,6 +146,19 @@ function migrer_(ss, avant, changements) {
       });
     }
   }
+}
+
+/** Remplit une colonne pour les lignes connues où elle est vide (ne remplace jamais une valeur saisie). */
+function remplirSiVide_(ss, nomOnglet, colCle, colValeur, valeurs, changements) {
+  const sh = ss.getSheetByName(nomOnglet);
+  if (!sh || sh.getLastRow() < 2) return;
+  const tete = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const iK = tete.indexOf(colCle), iV = tete.indexOf(colValeur);
+  if (iK === -1 || iV === -1) return;
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, tete.length).getValues();
+  let n = 0;
+  data.forEach((r, i) => { const v = valeurs[String(r[iK])]; if (v && String(r[iV]).trim() === '') { sh.getRange(i + 2, iV + 1).setValue(v); n++; } });
+  if (n) changements.push(n + ' valeur(s) « ' + colValeur + ' » ajoutée(s) dans « ' + nomOnglet + ' »');
 }
 
 function cleTexte_(v) { return v instanceof Date ? Utilities.formatDate(v, tz_(), 'yyyy-MM-dd') : String(v); }

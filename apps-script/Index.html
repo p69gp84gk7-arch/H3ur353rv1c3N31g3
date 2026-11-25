@@ -355,7 +355,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
       </div>
       <div class="card wide">
         <h3>Modèles de semaine</h3>
-        <div class="sub">Pour chaque jour : un horaire (ex. <b>08:00-18:00</b>, la pause repas est déduite automatiquement), <b>RH</b> pour un repos, un code (<b>CP</b>, <b>JF</b>, <b>SOLI</b>, <b>REC</b>, <b>MAL</b>), ou vide pour ne rien poser. Utilisés par le bouton « 📅 Appliquer un modèle » du planning.</div>
+        <div class="sub">Pour chaque jour : un horaire (ex. <b>08:00-18:00</b>, la pause repas est déduite automatiquement), une <b>abréviation</b> de type (RH, CP, JF, SOLI… à régler dans « Types de créneaux »), « FORM 08:00-17:00 » pour un type à horaires, ou vide pour ne rien poser. Utilisés par le bouton « 📅 Appliquer un modèle » du planning.</div>
         <div style="overflow-x:auto"><table class="t modtab" id="modTable"></table></div>
         <button class="btn" id="addModele" style="margin-top:10px">+ Ajouter un modèle</button>
       </div>
@@ -1077,13 +1077,14 @@ function renderSettings() {
     <div><h4>Repos minimum</h4>${r('reposJour', 'Repos entre 2 journées')}${r('reposHebdo', 'Repos hebdomadaire d\'affilée')}
       <h4 class="mt">Pause repas automatique</h4>${r('pauseAuto', 'Durée de la pause', 'min')}${r('pauseSeuil', 'Si le créneau dépasse')}</div>
     <div><h4>Travail de nuit</h4>${r('nuitDebut', 'La nuit commence à')}${r('nuitFin', 'La nuit finit à')}${r('nuitMaxPoste', 'Maxi par poste de nuit')}${r('nuitMoy', 'Maxi en moyenne (travailleur de nuit)')}</div>`;
-  $('#typeTable').innerHTML = `<thead><tr><th>Couleur</th><th>Nom</th><th>Saisie</th><th>Compte dans les 35h ?</th><th>Forfait / jour</th><th>Temps de travail effectif ?<br><small style="font-weight:400">(compte pour 48h, 10h, 13h…)</small></th><th>Puise dans le solde ?</th><th></th></tr></thead><tbody>` +
+  $('#typeTable').innerHTML = `<thead><tr><th>Couleur</th><th>Nom</th><th>Saisie</th><th>Compte dans les 35h ?</th><th>Forfait / jour</th><th>Temps de travail effectif ?<br><small style="font-weight:400">(compte pour 48h, 10h, 13h…)</small></th><th>Puise dans le solde ?</th><th>Abréviations<br><small style="font-weight:400">(modèles et imports)</small></th><th></th></tr></thead><tbody>` +
     state.types.map(t => { const fixed = isWork({ type: t.id }); return `<tr data-t="${t.id}"><td><input type="color" data-tf="couleur" value="${t.couleur}"></td><td><input type="text" data-tf="nom" value="${esc(t.nom)}">${t.id === 'travail_nuit' ? `<div class="hint" style="font-size:11.5px">posé automatiquement quand le créneau est surtout entre ${R.nuitDebut}h et ${R.nuitFin}h</div>` : ''}</td>
       <td><select data-tf="mode" ${fixed ? 'disabled' : ''}><option value="heures" ${t.mode === 'heures' ? 'selected' : ''}>Horaires</option><option value="jour" ${t.mode === 'jour' ? 'selected' : ''}>Journée entière</option></select></td>
       <td style="text-align:center"><input type="checkbox" data-tf="compteur" ${t.compteur ? 'checked' : ''}></td>
       <td>${t.mode === 'jour' ? `<input type="number" step="0.5" min="0" data-tf="forfait" value="${t.forfait}"> h` : '<span class="hint">durée réelle − pause</span>'}</td>
       <td style="text-align:center"><input type="checkbox" data-tf="effectif" ${t.effectif ? 'checked' : ''} ${t.mode === 'jour' ? 'disabled' : ''}></td>
       <td style="text-align:center"><input type="checkbox" data-tf="deduit" ${t.deduit ? 'checked' : ''} ${t.mode !== 'jour' ? 'disabled' : ''}></td>
+      <td><input type="text" data-tf="abrev" value="${esc(t.abrev || '')}" placeholder="ex. CP, CA" style="width:150px" title="Séparez par des virgules. Une abréviation ne peut désigner qu'un seul type."></td>
       <td>${fixed ? '' : `<button class="icon" data-del-type="${t.id}" title="Supprimer">🗑</button>`}</td></tr>`; }).join('') + '</tbody>';
   $('#stationList').innerHTML = state.stations.map((s, i) => `<div class="rule"><input type="text" data-st-i="${i}" value="${esc(s)}" style="flex:1"><span class="hint" style="margin:0 8px;white-space:nowrap">${state.emps.filter(e => e.station === s).length} salarié(s)</span><button class="icon" data-del-st="${i}" title="Supprimer">🗑</button></div>`).join('');
   const S = state.season;
@@ -1111,14 +1112,20 @@ $('#v-reglages').addEventListener('change', ev => {
   else if (t.dataset.mf) {
     const m = state.modeles.find(x => x.id === t.closest('tr').dataset.m);
     if (t.dataset.mf === 'jour') {
-      const v = t.value.trim().toUpperCase().replace(/\s+/g, '').replace(/(\d{1,2})H(?!\d)/g, '$1:00').replace(/(\d)H(\d)/g, '$1:$2').replace(/–/g, '-');
-      if (v && !lireCaseModele(v)) { toast('Valeur non reconnue : écrivez par ex. 08:00-18:00, RH, CP, JF, SOLI, REC, MAL ou laissez vide.'); return renderSettings(); }
-      const lu = lireCaseModele(v);
-      m.jours[+t.dataset.j] = lu && lu.debut !== undefined ? tv(lu.debut) + '-' + tv(lu.fin) : v; // toujours au format 08:00-18:00
+      const v = normaliserCase(t.value.replace(/–/g, '-'));
+      const lus = v ? v.split('+').map(lireCaseModele) : [];
+      if (lus.some(x => !x)) { toast('Valeur non reconnue : écrivez par ex. 08:00-18:00 ou une abréviation (' + listeCodes() + '), ou laissez vide.'); return renderSettings(); }
+      m.jours[+t.dataset.j] = lus.map(ecrireCase).join('+'); // forme simple : 08:00-18:00, CP, FORM 08:00-17:00
     } else m[t.dataset.mf] = t.value;
   }
   else if (t.dataset.f) { const e = emp(t.closest('tr').dataset.e); e[t.dataset.f] = t.type === 'checkbox' ? t.checked : t.value; }
   else if (t.dataset.rule) state.rules[t.dataset.rule] = +t.value;
+  else if (t.dataset.tf === 'abrev') {
+    const ty = type(t.closest('tr').dataset.t), mots = [...new Set(t.value.split(/[,;\s]+/).map(motCode).filter(Boolean))];
+    const pris = mots.map(a => [a, state.types.find(x => x !== ty && String(x.abrev || '').split(/[,;\s]+/).map(motCode).includes(a))]).filter(x => x[1]);
+    if (pris.length) { toast('« ' + pris[0][0] + ' » est déjà utilisée par « ' + pris[0][1].nom + ' » : une abréviation ne peut désigner qu\'un seul type.'); return renderSettings(); }
+    ty.abrev = mots.join(', ');
+  }
   else if (t.dataset.tf) { const ty = type(t.closest('tr').dataset.t); ty[t.dataset.tf] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? +t.value : t.value; if (ty.mode === 'jour') ty.effectif = false; else ty.deduit = false; }
   else if (t.dataset.stI) { const i = +t.dataset.stI, old = state.stations[i]; state.stations[i] = t.value; state.emps.forEach(e => { if (e.station === old) e.station = t.value; }); if (state.station === old) state.station = t.value; }
   else if (t.dataset.season) { const d = parseFd(t.value); if (!d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); } state.rules[t.dataset.season === 'start' ? 'saisonDebut' : 'saisonFin'] = fd(d); saveSettings(true); return; }
@@ -1137,7 +1144,7 @@ $('#v-reglages').addEventListener('click', ev => {
   else if (t.dataset.delFer) state.feries = state.feries.filter(x => x.d !== t.dataset.delFer);
   else if (t.dataset.delSt) { const s = state.stations[+t.dataset.delSt]; if (state.emps.some(e => e.station === s)) return toast('Déplacez d\'abord les salariés de cette station.'); state.stations.splice(+t.dataset.delSt, 1); }
   else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '' });
-  else if (t.id === 'addType') state.types.push({ id: 'type_' + newId().slice(1), nom: 'Nouveau type', couleur: '#0891b2', mode: 'heures', compteur: true, effectif: true, forfait: 0, deduit: false });
+  else if (t.id === 'addType') state.types.push({ id: 'type_' + newId().slice(1), nom: 'Nouveau type', couleur: '#0891b2', mode: 'jour', compteur: true, effectif: false, forfait: 7, deduit: false, abrev: '' });
   else if (t.dataset.delPer) state.periodes.splice(+t.dataset.delPer, 1);
   else if (t.id === 'addPer') state.periodes.push({ nom: 'Période forte', du: iso(weekDate(state.week)), au: iso(weekDate(state.week + 4, 6)), base: 40 });
   else if (t.dataset.delMod) { if (!confirm('Supprimer ce modèle ? (les créneaux déjà posés ne changent pas)')) return; state.modeles = state.modeles.filter(m => m.id !== t.dataset.delMod); }
@@ -1149,38 +1156,61 @@ $('#v-reglages').addEventListener('click', ev => {
 });
 
 /* ---------- modèles de semaine ---------- */
-const CODES_MODELE = { RH: 'repos_hebdo', CP: 'conges', JF: 'ferie', SOLI: 'soli', REC: 'recup', MAL: 'maladie', FORM: 'formation' };
+/** Abréviations (Réglages › Types) → type. Ex. { CP: 'conges', CA: 'conges', RH: 'repos_hebdo' } */
+const motCode = a => String(a || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function codesTypes() {
+  const m = {};
+  state.types.forEach(t => String(t.abrev || '').split(/[,;\s]+/).map(motCode).filter(Boolean).forEach(a => { if (!(a in m)) m[a] = t.id; }));
+  return m;
+}
+const abrevPrincipale = t => (String(t.abrev || '').split(/[,;\s]+/).map(motCode).filter(Boolean)[0] || '');
+const listeCodes = () => Object.keys(codesTypes()).slice(0, 12).join(', ');
+/** Écrit une case lue sous sa forme simple : « 08:00-18:00 », « CP », « FORM 08:00-17:00 ». */
+function ecrireCase(c) {
+  if (!c) return '';
+  if (c.debut === undefined) return c.code;
+  const t = type(c.type);
+  return (isWork({ type: c.type }) ? '' : (abrevPrincipale(t) || t.nom) + ' ') + tv(c.debut) + '-' + tv(c.fin);
+}
 /** Lit une case de modèle : { type, debut, fin } en minutes dans la journée, ou null si illisible. */
 function lireCaseModele(v) {
-  v = String(v || '').trim().toUpperCase();
-  if (!v) return null;
-  if (CODES_MODELE[v]) return { code: v, type: CODES_MODELE[v] };
-  const m = /^(\d{1,2})[:H](\d{2})-(\d{1,2})[:H](\d{2})$/.exec(v.replace(/\s+/g, ''));
+  const brut = String(v || '').trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  if (!brut) return null;
+  const codes = codesTypes();
+  const seul = motCode(brut);
+  if (codes[seul] && !/\d{1,2}[:H]\d{2}/.test(brut)) {               // abréviation seule
+    const t = type(codes[seul]);
+    if (t.mode === 'jour') return { code: seul, type: t.id };
+    return { type: t.id, debut: 8 * 60, fin: 16 * 60 };               // type « horaires » sans heures : 8h–16h
+  }
+  let typeId = 'travail_jour', h = brut.replace(/\s+/g, ' ');
+  const avecCode = /^([A-Z0-9]*[A-Z][A-Z0-9]*)\s*(\d.*)$/.exec(h);     // « FORM 08:00-17:00 »
+  if (avecCode) { if (!codes[avecCode[1]] || type(codes[avecCode[1]]).mode === 'jour') return null; typeId = codes[avecCode[1]]; h = avecCode[2]; }
+  const m = /^(\d{1,2})[:H](\d{2})-(\d{1,2})[:H](\d{2})$/.exec(h.replace(/\s+/g, ''));
   if (!m) return null;
   const a = +m[1] * 60 + +m[2]; let b = +m[3] * 60 + +m[4];
   if (a >= DAY || b > DAY || +m[2] > 59 || +m[4] > 59) return null;
   if (b <= a) b += DAY; // finit le lendemain (nuit)
-  return { type: 'travail_jour', debut: a, fin: b };
+  return { type: typeId, debut: a, fin: b };
 }
 function totalModele(m) {
   let t = 0;
   m.jours.forEach(v0 => String(v0 || '').split('+').forEach(v => { const c = lireCaseModele(v); if (!c) return;
-    if (c.debut !== undefined) t += workMin({ type: 'travail_jour', start: c.debut, end: c.fin });
+    if (c.debut !== undefined) { const ty = type(c.type); if (ty.compteur) t += workMin({ type: c.type, start: c.debut, end: c.fin }); }
     else { const ty = state.types.find(x => x.id === c.type); if (ty && ty.compteur) t += ty.forfait * 60; } }));
   return t;
 }
-/** Transforme une saisie libre (« 8h30 - 17h30 », « 08:30 17:30 », « Repos », « Congés »…) en valeur de modèle. */
-const SYNONYMES = { REPOS: 'RH', 'REPOSHEBDO': 'RH', CONGES: 'CP', CONGE: 'CP', CONGESPAYES: 'CP', FERIE: 'JF', FERIES: 'JF', FORMATION: 'FORM', MALADIE: 'MAL', ABSENCE: 'MAL', RECUP: 'REC', RECUPERATION: 'REC', SOLIDARITE: 'SOLI', CA: 'CP', RTT: 'REC' };
+/** Transforme une saisie libre (« 8h30 - 17h30 », « 08:30 17:30 », « Congés », « form 8h-17h »…) en valeur lisible. */
 function normaliserCase(raw) {
-  let v = String(raw == null ? '' : raw).trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const v = String(raw == null ? '' : raw).trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   if (!v || v === '-' || v === '—') return '';
-  const code = v.replace(/[^A-Z]/g, '');
-  if (!/\d/.test(v)) return SYNONYMES[code] || code;
+  if (!/\d/.test(v)) return motCode(v);
   return v.split('+').map(part => {
-    let x = part.trim().replace(/(\d)\.(\d)/g, '$1:$2').replace(/(\d{1,2})H(?!\d)/g, '$1:00').replace(/(\d)H(\d)/g, '$1:$2');
+    const pre = (part.trim().match(/^[A-Z][A-Z0-9]*(?=[\s\d])/) || [''])[0];
+    const x = part.trim().slice(pre.length).replace(/(\d)\.(\d)/g, '$1:$2').replace(/(\d{1,2})H(?!\d)/g, '$1:00').replace(/(\d)H(\d)/g, '$1:$2');
     const t = x.match(/\d{1,2}:\d{2}/g) || [];
-    if (t.length >= 2) return t[0].padStart(5, '0') + '-' + t[1].padStart(5, '0');
-    return x.replace(/\s+/g, '');
+    if (t.length >= 2) return (pre ? pre + ' ' : '') + t[0].padStart(5, '0') + '-' + t[1].padStart(5, '0');
+    return part.replace(/\s+/g, '');
   }).join('+');
 }
 /** Pose une journée (une ou plusieurs valeurs séparées par « + ») pour un salarié. Met à jour le compteur cpt. */
@@ -1195,7 +1225,7 @@ function poserJour(eId, w, j, valeur, remplacer, cpt) {
   for (const c of morceaux) {
     if (f && f.chome && c.debut !== undefined) { cpt.ignores++; continue; }   // férié chômé : pas de travail
     const cand = c.debut !== undefined
-      ? autoType({ emp: eId, type: 'travail_jour', start: j * DAY + c.debut, end: j * DAY + c.fin })
+      ? autoType({ emp: eId, type: c.type, start: j * DAY + c.debut, end: j * DAY + c.fin })
       : { emp: eId, type: c.type, start: j * DAY, end: (j + 1) * DAY };
     if (!state.types.some(t => t.id === cand.type) && !isWork(cand)) { cpt.ignores++; continue; }
     const lay = type(cand.type).mode;
@@ -1229,7 +1259,7 @@ function ouvrirModele() {
     <div class="mb">
       <label class="l">Modèle</label>
       <select id="mMod" style="width:100%">${state.modeles.map(m => `<option value="${esc(m.id)}">${esc(m.nom)} — ${fmtH(totalModele(m))} / semaine</option>`).join('')}</select>
-      <label class="l">Horaires de chaque jour <span class="hint">(modifiables avant d'appliquer : 08:00-18:00, RH, CP, JF, SOLI… ou vide)</span></label>
+      <label class="l">Horaires de chaque jour <span class="hint">(modifiables avant d'appliquer : 08:00-18:00, une abréviation comme RH, CP, JF… ou vide)</span></label>
       <div class="jrs" id="mJrs"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12.5px"><span>Total : <b id="mTot"></b> par semaine complète</span>
         <label style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="mSave"> Enregistrer ces horaires dans le modèle</label></div>
@@ -1375,9 +1405,9 @@ const mediane = a => { if (!a.length) return 0; const b = a.slice().sort((x, y) 
 /** Range les textes d'une page dans une grille (colonnes = x, lignes = y). */
 function cellulesPdf(items, cols, rows) {
   const ecartX = mediane(cols.slice(1).map((c, i) => c.x - cols[i].x)) || 60, ecartY = mediane(rows.slice(1).map((r, i) => Math.abs(r.y - rows[i].y))) || 30;
-  const cells = new Map();
+  const cells = new Map(), codes = codesTypes();
   for (const it of items) {
-    if (!/^(\d{1,2}[:h]\d{2}|RH|CP|JF|SOLI|FORM|REC|MAL|CA|RTT)$/i.test(it.s)) continue;
+    if (!/^\d{1,2}[:h]\d{2}$/i.test(it.s) && !codes[motCode(it.s)]) continue; // horaire ou abréviation connue
     const c = cols.reduce((b, k) => (Math.abs(k.x - it.x) < Math.abs(b.x - it.x) ? k : b), cols[0]);
     const r = rows.reduce((b, k) => (Math.abs(k.y - it.y) < Math.abs(b.y - it.y) ? k : b), rows[0]);
     if (Math.abs(c.x - it.x) > ecartX * 0.6 || Math.abs(r.y - it.y) > ecartY * 0.6) continue;
@@ -1445,7 +1475,7 @@ function ouvrirImport() {
   $('#mbox').innerHTML = `<div class="mh"><span>📥 Importer des plannings (CSV ou PDF)</span><button class="icon" id="iX">✕</button></div>
     <div class="mb">
       <div class="hint" style="font-size:12.5px;line-height:1.55">
-        <b>CSV</b> (Excel, Google Sheets) : une ligne par salarié (« NOM Prénom »), une colonne par date (jj/mm/aaaa). Dans les cases : <b>08:30-17:30</b>, <b>RH</b>, <b>CP</b>, <b>JF</b>, <b>SOLI</b>, <b>FORM</b>, <b>REC</b>, <b>MAL</b> ; deux créneaux : <b>08:00-12:00+13:00-17:00</b>.
+        <b>CSV</b> (Excel, Google Sheets) : une ligne par salarié (« NOM Prénom »), une colonne par date (jj/mm/aaaa). Dans les cases : <b>08:30-17:30</b> ou une <b>abréviation</b> (Réglages › Types : RH, CP, JF, SOLI, RTT…) ; deux créneaux : <b>08:00-12:00+13:00-17:00</b>.
         Ou une ligne par créneau : <i>Salarié ; Date ; Début ; Fin ; Type</i>.<br>
         <b>PDF</b> : export RHéa contenant du texte (vue semaine ou récapitulatif annuel) — <i>lecture à vérifier dans l'aperçu</i>.</div>
       <label class="l">Fichier à remplir (CSV avec vos salariés et les dates choisies)</label>
@@ -1524,7 +1554,7 @@ function telechargerCsvModele() {
   const dates = []; for (let d = new Date(du); d <= au; d.setDate(d.getDate() + 1)) dates.push(new Date(d));
   const cellule = (eId, d) => { const di = dayIndex(d), w = Math.floor(di / 7), j = di - w * 7;
     return getSlots(w).filter(s => s.emp === eId && Math.floor(s.start / DAY) === j).sort((a, b) => a.start - b.start)
-      .map(s => { const t = type(s.type); if (t.mode === 'jour') return Object.keys(CODES_MODELE).find(k => CODES_MODELE[k] === s.type) || t.nom; return tv(s.start) + '-' + tv(s.end); }).join('+'); };
+      .map(s => { const t = type(s.type); if (t.mode === 'jour') return abrevPrincipale(t) || t.nom; return (isWork(s) ? '' : (abrevPrincipale(t) || t.nom) + ' ') + tv(s.start) + '-' + tv(s.end); }).join('+'); };
   const lignes = [['Salarié', ...dates.map(fd)], ...visibleEmps().map(e => [e.nom + ' ' + e.prenom, ...dates.map(d => cellule(e.id, d))])];
   const csv = lignes.map(l => l.map(c => /[;"\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c).join(';')).join('\r\n');
   const a = document.createElement('a');

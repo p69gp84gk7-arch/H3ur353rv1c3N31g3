@@ -63,6 +63,7 @@ function chargerDonnees() {
     mode: String(r['Saisie']) === 'Journée entière' ? 'jour' : 'heures',
     compteur: vrai_(r['Compte dans les 35h']), forfait: Number(r['Forfait par jour (h)']) || 0,
     effectif: vrai_(r['Temps de travail effectif']), deduit: vrai_(r['Puise dans le solde']),
+    abrev: String(r['Abréviations'] == null ? '' : r['Abréviations']).trim(),
   }));
   const rules = {};
   lireTable_('Règles').forEach(r => {
@@ -153,7 +154,7 @@ function enregistrerReglages(r) {
     ecrireTable_('Types', (r.types || []).map(t => ({
       'ID': t.id, 'Nom': t.nom, 'Couleur': t.couleur, 'Saisie': t.mode === 'jour' ? 'Journée entière' : 'Horaires',
       'Compte dans les 35h': !!t.compteur, 'Forfait par jour (h)': Number(t.forfait) || 0,
-      'Temps de travail effectif': !!t.effectif, 'Puise dans le solde': !!t.deduit,
+      'Temps de travail effectif': !!t.effectif, 'Puise dans le solde': !!t.deduit, 'Abréviations': String(t.abrev || ''),
     })));
     // Règles : on garde unités et libellés existants
     const libelles = {};
