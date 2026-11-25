@@ -195,6 +195,19 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .mbox .jrs div b{display:block;font-size:10px;color:var(--muted)}
 .mbox .jrs div[style*="background"] b{color:rgba(255,255,255,.85)}
 .modtab input.j{width:96px;text-align:center}
+.mbox .jrs input{width:100%;font:inherit;font-size:12px;text-align:center;border:1px solid var(--line2);border-radius:5px;padding:4px 2px;background:#fff;color:var(--ink)}
+.mbox .jrs input.bad{border-color:#dc2626;background:#fee2e2}
+.mbox.large{width:min(1100px,100%)}
+.imp-wrap{overflow:auto;max-height:46vh;border:1px solid var(--line);border-radius:8px;margin-top:8px}
+.imp{border-collapse:collapse;font-size:12px;white-space:nowrap}
+.imp th,.imp td{border:1px solid var(--line);padding:3px 6px;text-align:center}
+.imp th{background:#fafbfc;position:sticky;top:0;z-index:1;font-weight:600}
+.imp td.nm,.imp th.nm{position:sticky;left:0;background:#fff;text-align:left;z-index:2}
+.imp td.ok{background:#ecfdf5;color:#065f46}
+.imp td.bad{background:#fee2e2;color:#991b1b;font-weight:600}
+.imp td.plein{background:#f3f4f6;color:#9ca3af;text-decoration:line-through}
+.imp select{font:inherit;font-size:12px;max-width:190px}
+.mbox textarea{width:100%;height:90px;font:12px ui-monospace,Menlo,monospace;margin-top:6px}
 @media (max-width:760px){.modal{align-items:flex-end;padding:0}.mbox{border-radius:16px 16px 0 0;max-height:90vh;width:100%}.mbox .emps{grid-template-columns:1fr}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
 .toast.on{opacity:1}
@@ -270,6 +283,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
       <select class="btn mob-only" id="stationSel" style="width:100%"></select>
       <div class="spacer desk-only"></div>
       <button class="btn" id="openModele">📅 Appliquer un modèle</button>
+      <button class="btn" id="openImport">📥 Importer CSV / PDF</button>
       <button class="btn desk-only" id="copyPrev">Copier la semaine précédente</button>
     </div>
     <div class="mdays mob-only" id="mdays" style="display:none"></div>
@@ -1150,50 +1164,75 @@ function lireCaseModele(v) {
 }
 function totalModele(m) {
   let t = 0;
-  m.jours.forEach(v => { const c = lireCaseModele(v); if (!c) return;
+  m.jours.forEach(v0 => String(v0 || '').split('+').forEach(v => { const c = lireCaseModele(v); if (!c) return;
     if (c.debut !== undefined) t += workMin({ type: 'travail_jour', start: c.debut, end: c.fin });
-    else { const ty = state.types.find(x => x.id === c.type); if (ty && ty.compteur) t += ty.forfait * 60; } });
+    else { const ty = state.types.find(x => x.id === c.type); if (ty && ty.compteur) t += ty.forfait * 60; } }));
   return t;
 }
-/** Pose un modèle pour des salariés sur une période. Renvoie { faits, ignores, remplaces }. */
-function appliquerModele(m, salaries, du, au, remplacer) {
-  let faits = 0, ignores = 0, remplaces = 0;
+/** Transforme une saisie libre (« 8h30 - 17h30 », « 08:30 17:30 », « Repos », « Congés »…) en valeur de modèle. */
+const SYNONYMES = { REPOS: 'RH', 'REPOSHEBDO': 'RH', CONGES: 'CP', CONGE: 'CP', CONGESPAYES: 'CP', FERIE: 'JF', FERIES: 'JF', FORMATION: 'FORM', MALADIE: 'MAL', ABSENCE: 'MAL', RECUP: 'REC', RECUPERATION: 'REC', SOLIDARITE: 'SOLI', CA: 'CP', RTT: 'REC' };
+function normaliserCase(raw) {
+  let v = String(raw == null ? '' : raw).trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (!v || v === '-' || v === '—') return '';
+  const code = v.replace(/[^A-Z]/g, '');
+  if (!/\d/.test(v)) return SYNONYMES[code] || code;
+  return v.split('+').map(part => {
+    let x = part.trim().replace(/(\d)\.(\d)/g, '$1:$2').replace(/(\d{1,2})H(?!\d)/g, '$1:00').replace(/(\d)H(\d)/g, '$1:$2');
+    const t = x.match(/\d{1,2}:\d{2}/g) || [];
+    if (t.length >= 2) return t[0].padStart(5, '0') + '-' + t[1].padStart(5, '0');
+    return x.replace(/\s+/g, '');
+  }).join('+');
+}
+/** Pose une journée (une ou plusieurs valeurs séparées par « + ») pour un salarié. Met à jour le compteur cpt. */
+function poserJour(eId, w, j, valeur, remplacer, cpt) {
+  const morceaux = String(valeur || '').split('+').map(v => lireCaseModele(v)).filter(Boolean);
+  if (!morceaux.length) return;
+  const e = emp(eId), f = ferieAt(w, j), em = embaucheMin(e, w);
+  if (em !== null && j * DAY < em) { cpt.ignores++; return; }                 // avant l'embauche
+  const memeJour = getSlots(w).filter(s => s.emp === eId && Math.floor(s.start / DAY) === j);
+  if (memeJour.length && !remplacer) { cpt.gardes++; return; }               // jour déjà rempli : on garde
+  memeJour.forEach(s => { removeSlotW(s, w); cpt.remplaces++; });
+  for (const c of morceaux) {
+    if (f && f.chome && c.debut !== undefined) { cpt.ignores++; continue; }   // férié chômé : pas de travail
+    const cand = c.debut !== undefined
+      ? autoType({ emp: eId, type: 'travail_jour', start: j * DAY + c.debut, end: j * DAY + c.fin })
+      : { emp: eId, type: c.type, start: j * DAY, end: (j + 1) * DAY };
+    if (!state.types.some(t => t.id === cand.type) && !isWork(cand)) { cpt.ignores++; continue; }
+    const lay = type(cand.type).mode;
+    if (getSlots(w).some(s => s.emp === eId && type(s.type).mode === lay && s.start < cand.end && cand.start < s.end)) { cpt.ignores++; continue; }
+    const sl = { id: newId(), ...cand };
+    getSlots(w).push(sl); markSlot(sl, w); cpt.faits++;
+  }
+}
+const nouveauCompteur = () => ({ faits: 0, ignores: 0, remplaces: 0, gardes: 0 });
+function resumeCompteur(r) {
+  return `${r.faits} créneau${r.faits > 1 ? 'x' : ''} posé${r.faits > 1 ? 's' : ''}` + (r.remplaces ? ` · ${r.remplaces} remplacé(s)` : '')
+    + (r.gardes ? ` · ${r.gardes} jour(s) déjà remplis gardés` : '') + (r.ignores ? ` · ${r.ignores} ignoré(s) (avant embauche, férié chômé ou chevauchement)` : '');
+}
+/** Pose un modèle pour des salariés sur une période (jours : valeurs éventuellement modifiées avant application). */
+function appliquerModele(m, salaries, du, au, remplacer, jours) {
+  const cpt = nouveauCompteur(), js = jours || m.jours;
   for (let d = new Date(du); d <= au; d.setDate(d.getDate() + 1)) {
     const di = dayIndex(d), w = Math.floor(di / 7), j = di - w * 7;
-    const c = lireCaseModele(m.jours[j]);
-    if (!c) continue;
-    const f = ferieAt(w, j);
-    for (const eId of salaries) {
-      const e = emp(eId);
-      const em = embaucheMin(e, w);
-      if (em !== null && j * DAY < em) { ignores++; continue; } // avant l'embauche
-      if (f && f.chome && c.debut !== undefined) { ignores++; continue; } // férié chômé : pas de travail
-      const cand = c.debut !== undefined
-        ? autoType({ emp: eId, type: 'travail_jour', start: j * DAY + c.debut, end: j * DAY + c.fin })
-        : { emp: eId, type: c.type, start: j * DAY, end: (j + 1) * DAY };
-      if (!state.types.some(t => t.id === cand.type) && !isWork(cand)) { ignores++; continue; }
-      const memeJour = getSlots(w).filter(s => s.emp === eId && Math.floor(s.start / DAY) === j);
-      if (remplacer) memeJour.forEach(s => { removeSlotW(s, w); remplaces++; });
-      else {
-        const lay = type(cand.type).mode;
-        if (getSlots(w).some(s => s.emp === eId && type(s.type).mode === lay && s.start < cand.end && cand.start < s.end)) { ignores++; continue; }
-      }
-      const s = { id: newId(), ...cand };
-      getSlots(w).push(s); markSlot(s, w); faits++;
-    }
+    if (!lireCaseModele(js[j])) continue;
+    for (const eId of salaries) poserJour(eId, w, j, js[j], remplacer, cpt);
   }
-  return { faits, ignores, remplaces };
+  return cpt;
 }
 function ouvrirModele() {
   if (!state.modeles.length) return toast('Créez d\'abord un modèle dans Réglages › Modèles de semaine.');
   const list = visibleEmps();
   const choisis = new Set(state.sel && list.some(e => e.id === state.sel) ? [state.sel] : []);
   const lundi = weekDate(state.week), dimanche = weekDate(state.week, 6);
+  $('#mbox').className = 'mbox';
   $('#mbox').innerHTML = `<div class="mh"><span>📅 Appliquer un modèle de semaine</span><button class="icon" id="mX">✕</button></div>
     <div class="mb">
       <label class="l">Modèle</label>
       <select id="mMod" style="width:100%">${state.modeles.map(m => `<option value="${esc(m.id)}">${esc(m.nom)} — ${fmtH(totalModele(m))} / semaine</option>`).join('')}</select>
+      <label class="l">Horaires de chaque jour <span class="hint">(modifiables avant d'appliquer : 08:00-18:00, RH, CP, JF, SOLI… ou vide)</span></label>
       <div class="jrs" id="mJrs"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12.5px"><span>Total : <b id="mTot"></b> par semaine complète</span>
+        <label style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="mSave"> Enregistrer ces horaires dans le modèle</label></div>
       <label class="l">Période (jj/mm/aaaa)</label>
       <div class="dates">du <input type="text" id="mDu" value="${fd(lundi)}"> au <input type="text" id="mAu" value="${fd(dimanche)}">
         <button class="btn sm" id="mSem">Cette semaine</button><button class="btn sm" id="mSaison">Jusqu'à fin de saison</button></div>
@@ -1204,35 +1243,297 @@ function ouvrirModele() {
     </div>
     <div class="mf"><button class="btn" id="mAnnuler">Annuler</button><button class="btn primary" id="mOk">Appliquer</button></div>`;
   $('#modal').classList.add('on');
-  const lire = () => ({ m: state.modeles.find(x => x.id === $('#mMod').value), du: parseFd($('#mDu').value), au: parseFd($('#mAu').value),
+  const modele = () => state.modeles.find(x => x.id === $('#mMod').value);
+  const remplirJours = () => {
+    const m = modele();
+    $('#mJrs').innerHTML = m.jours.map((x, i) => `<div><b>${DAYN[i]}</b><input type="text" data-mj="${i}" value="${esc(x || '')}" placeholder="—"></div>`).join('');
+  };
+  const joursSaisis = () => [...document.querySelectorAll('[data-mj]')].map(x => normaliserCase(x.value));
+  const lire = () => ({ m: modele(), du: parseFd($('#mDu').value), au: parseFd($('#mAu').value), jours: joursSaisis(),
     sal: [...document.querySelectorAll('[data-me]:checked')].map(x => x.dataset.me), remp: $('#mRemp').checked });
   const maj = () => {
     const v = lire();
-    $('#mJrs').innerHTML = v.m.jours.map((x, i) => `<div style="${x && x !== 'RH' ? `background:${esc(v.m.couleur)};color:#fff` : ''}"><b>${DAYN[i]}</b>${esc(x || '—')}</div>`).join('');
-    if (!v.du || !v.au || v.au < v.du) { $('#mApercu').innerHTML = '⚠ Vérifiez les dates (jj/mm/aaaa, « au » après « du »).'; return; }
+    let invalides = 0;
+    document.querySelectorAll('[data-mj]').forEach(x => { const ok = !x.value.trim() || normaliserCase(x.value).split('+').every(lireCaseModele); x.classList.toggle('bad', !ok); if (!ok) invalides++; });
+    $('#mTot').textContent = fmtH(totalModele({ jours: v.jours }));
+    if (invalides) { $('#mApercu').innerHTML = '⚠ Une ou plusieurs cases sont illisibles (en rouge). Écrivez par ex. 08:00-18:00, RH, CP… ou laissez vide.'; return false; }
+    if (!v.du || !v.au || v.au < v.du) { $('#mApercu').innerHTML = '⚠ Vérifiez les dates (jj/mm/aaaa, « au » après « du »).'; return false; }
     const jours = Math.round((v.au - v.du) / 864e5) + 1;
-    $('#mApercu').innerHTML = `<b>${v.sal.length}</b> salarié(s) × <b>${jours}</b> jour(s) (${Math.ceil(jours / 7)} sem.) — ${fmtH(totalModele(v.m))} par semaine complète. `
+    $('#mApercu').innerHTML = `<b>${v.sal.length}</b> salarié(s) × <b>${jours}</b> jour(s) (${Math.ceil(jours / 7)} sem.). `
       + (v.remp ? 'Ce qui existe sur ces jours sera <b>remplacé</b>.' : 'Les jours déjà remplis sont <b>gardés</b>.');
+    return true;
   };
-  ['mMod', 'mDu', 'mAu', 'mRemp'].forEach(id => $('#' + id).addEventListener('change', maj));
+  remplirJours();
+  $('#mMod').addEventListener('change', () => { remplirJours(); maj(); });
+  ['mDu', 'mAu', 'mRemp'].forEach(id => $('#' + id).addEventListener('change', maj));
+  $('#mJrs').addEventListener('input', maj);
   $('#mbox').addEventListener('change', ev => { if (ev.target.dataset.me !== undefined) maj(); });
   $('#mSem').onclick = () => { $('#mDu').value = fd(lundi); $('#mAu').value = fd(dimanche); maj(); };
   $('#mSaison').onclick = () => { $('#mDu').value = fd(lundi); $('#mAu').value = fd(weekDate(state.season.end, 6)); maj(); };
   $('#mTous').onclick = ev => { ev.preventDefault(); const cs = document.querySelectorAll('[data-me]'); const tout = [...cs].every(c => c.checked); cs.forEach(c => { c.checked = !tout; }); maj(); };
   $('#mX').onclick = $('#mAnnuler').onclick = fermerModele;
   $('#mOk').onclick = () => {
+    if (!maj()) return toast('Corrigez d\'abord les cases en rouge ou les dates.');
     const v = lire();
-    if (!v.du || !v.au || v.au < v.du) return toast('Vérifiez les dates (jj/mm/aaaa).');
     if (!v.sal.length) return toast('Cochez au moins un salarié.');
     if ((v.au - v.du) / 864e5 > 400) return toast('Période trop longue (plus d\'un an).');
-    const r = appliquerModele(v.m, v.sal, v.du, v.au, v.remp);
+    if ($('#mSave').checked) { v.m.jours = v.jours.slice(); saveSettings(); }
+    const r = appliquerModele(v.m, v.sal, v.du, v.au, v.remp, v.jours);
     fermerModele(); renderAll();
-    toast(`${r.faits} créneau${r.faits > 1 ? 'x' : ''} posé${r.faits > 1 ? 's' : ''}` + (r.remplaces ? ` · ${r.remplaces} remplacé(s)` : '') + (r.ignores ? ` · ${r.ignores} ignoré(s) (déjà rempli, avant embauche ou férié chômé)` : ''));
+    toast(resumeCompteur(r));
   };
   maj();
 }
 function fermerModele() { $('#modal').classList.remove('on'); }
 $('#openModele').onclick = ouvrirModele;
+
+/* ---------- import CSV / PDF ---------- */
+const plat = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const sansAccent = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z' -]/g, ' ').replace(/\s+/g, ' ').trim();
+function trouverSalarie(nom) {
+  const n = sansAccent(nom);
+  return state.emps.find(e => [sansAccent(e.nom + ' ' + e.prenom), sansAccent(e.prenom + ' ' + e.nom)].includes(n)) || null;
+}
+function texteDate(t) { // jj/mm/aaaa, jj-mm-aaaa, jj/mm/aa ou aaaa-mm-jj → aaaa-mm-jj
+  t = String(t || '').trim(); let m;
+  if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if ((m = /(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/.exec(t))) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; const d = new Date(+y, +m[2] - 1, +m[1]); if (d.getDate() === +m[1]) return iso(d); }
+  return null;
+}
+/** Lit un CSV (séparateur ; , ou tabulation, guillemets acceptés). */
+function lireCsv(texte) {
+  texte = texte.replace(/^﻿/, '');
+  const premiere = texte.split(/\r?\n/)[0] || '';
+  const sep = [';', '\t', ','].map(c => [c, premiere.split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const lignes = []; let ligne = [], champ = '', guil = false;
+  for (let i = 0; i < texte.length; i++) {
+    const c = texte[i];
+    if (guil) { if (c === '"' && texte[i + 1] === '"') { champ += '"'; i++; } else if (c === '"') guil = false; else champ += c; }
+    else if (c === '"') guil = true;
+    else if (c === sep) { ligne.push(champ); champ = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && texte[i + 1] === '\n') i++; ligne.push(champ); champ = ''; if (ligne.some(x => x.trim())) lignes.push(ligne); ligne = []; }
+    else champ += c;
+  }
+  ligne.push(champ); if (ligne.some(x => x.trim())) lignes.push(ligne);
+  return lignes;
+}
+/** CSV → { lignes: [{ nom, jours: { aaaa-mm-jj: valeur } }] }. Deux formats : grille (une colonne par date) ou une ligne par créneau. */
+function analyserCsv(rows) {
+  if (!rows.length) throw new Error('Fichier vide.');
+  const tete = rows[0].map(x => sansAccent(x));
+  const iDate = tete.findIndex(h => h === 'date' || h === 'jour');
+  const parNom = {};
+  const ajout = (nom, d, v) => { nom = String(nom).trim(); if (!nom || !d) return; const L = parNom[nom] || (parNom[nom] = { nom, jours: {} }); L.jours[d] = L.jours[d] ? L.jours[d] + '+' + v : v; };
+  if (iDate >= 0) { // une ligne par créneau : Salarié ; Date ; Début ; Fin ; Type
+    const iNom = Math.max(0, tete.findIndex(h => /salari|nom|employ/.test(h)));
+    const iDeb = tete.findIndex(h => /debut|de$|entree|heure debut/.test(h)), iFin = tete.findIndex(h => /^fin|a$|sortie|heure fin/.test(h)), iType = tete.findIndex(h => /type|code|motif/.test(h));
+    rows.slice(1).forEach(r => {
+      const d = texteDate(r[iDate]);
+      const v = iDeb >= 0 && iFin >= 0 && String(r[iDeb] || '').trim() ? normaliserCase(r[iDeb] + '-' + r[iFin]) : normaliserCase(iType >= 0 ? r[iType] : '');
+      if (v) ajout(r[iNom], d, v);
+    });
+  } else { // grille : Salarié ; date1 ; date2 ; …
+    const dates = rows[0].map((h, k) => (k === 0 ? null : texteDate(h)));
+    if (!dates.some(Boolean)) throw new Error('Aucune date trouvée en première ligne (format jj/mm/aaaa attendu).');
+    rows.slice(1).forEach(r => dates.forEach((d, k) => { if (d && String(r[k] || '').trim()) ajout(r[0], d, normaliserCase(r[k])); }));
+  }
+  return { lignes: Object.values(parNom) };
+}
+
+/* PDF (export RHéa en texte) : lecture dans le navigateur avec pdf.js, sans service extérieur */
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+let pdfjsPret = null;
+function chargerPdfJs() {
+  if (pdfjsPret) return pdfjsPret;
+  pdfjsPret = new Promise((ok, ko) => {
+    const sc = document.createElement('script'); sc.src = PDFJS + 'pdf.min.js';
+    sc.onload = async () => {
+      try { // le « worker » est chargé en local (blob) pour éviter les blocages entre sites
+        const code = await (await fetch(PDFJS + 'pdf.worker.min.js')).text();
+        window.pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+      } catch (e) { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; }
+      ok(window.pdfjsLib);
+    };
+    sc.onerror = () => { pdfjsPret = null; ko(new Error('Impossible de charger le lecteur de PDF (connexion internet ?).')); };
+    document.head.appendChild(sc);
+  });
+  return pdfjsPret;
+}
+async function lirePdf(fichier) {
+  const lib = await chargerPdfJs();
+  const pdf = await lib.getDocument({ data: new Uint8Array(await fichier.arrayBuffer()) }).promise;
+  const pages = [];
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const tc = await (await pdf.getPage(n)).getTextContent();
+    pages.push(tc.items.filter(it => it.str && it.str.trim()).map(it => ({ s: it.str.trim(), x: it.transform[4] + (it.width || 0) / 2, y: it.transform[5] })));
+  }
+  return pages;
+}
+const MOIS_PDF = { jan: 0, janv: 0, fev: 1, fevr: 1, mar: 2, mars: 2, avr: 3, mai: 4, juin: 5, juil: 6, aou: 7, aout: 7, sep: 8, sept: 8, oct: 9, nov: 10, dec: 11 };
+const moisDe = t => { const k = sansAccent(t).replace(/[^a-z]/g, ''); return k in MOIS_PDF ? MOIS_PDF[k] : (k.slice(0, 4) in MOIS_PDF ? MOIS_PDF[k.slice(0, 4)] : (k.slice(0, 3) in MOIS_PDF ? MOIS_PDF[k.slice(0, 3)] : null)); };
+const mediane = a => { if (!a.length) return 0; const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+/** Range les textes d'une page dans une grille (colonnes = x, lignes = y). */
+function cellulesPdf(items, cols, rows) {
+  const ecartX = mediane(cols.slice(1).map((c, i) => c.x - cols[i].x)) || 60, ecartY = mediane(rows.slice(1).map((r, i) => Math.abs(r.y - rows[i].y))) || 30;
+  const cells = new Map();
+  for (const it of items) {
+    if (!/^(\d{1,2}[:h]\d{2}|RH|CP|JF|SOLI|FORM|REC|MAL|CA|RTT)$/i.test(it.s)) continue;
+    const c = cols.reduce((b, k) => (Math.abs(k.x - it.x) < Math.abs(b.x - it.x) ? k : b), cols[0]);
+    const r = rows.reduce((b, k) => (Math.abs(k.y - it.y) < Math.abs(b.y - it.y) ? k : b), rows[0]);
+    if (Math.abs(c.x - it.x) > ecartX * 0.6 || Math.abs(r.y - it.y) > ecartY * 0.6) continue;
+    const k = rows.indexOf(r) + '|' + cols.indexOf(c);
+    (cells.get(k) || cells.set(k, []).get(k)).push(it);
+  }
+  const valeur = list => {
+    const code = list.find(it => !/\d/.test(it.s)); if (code) return normaliserCase(code.s);
+    const t = list.slice().sort((a, b) => b.y - a.y).map(it => it.s.replace(/h/i, ':'));
+    return t.length >= 2 ? normaliserCase(t[0] + '-' + t[1]) : '?' + t.join(' ');
+  };
+  return { get: (ri, ci) => (cells.has(ri + '|' + ci) ? valeur(cells.get(ri + '|' + ci)) : '') };
+}
+/** Reconnaît les deux mises en page RHéa : vue semaine (salariés × 7 jours) et récapitulatif annuel (mois × jours 1–31). */
+function analyserPdf(pages) {
+  const parNom = {};
+  const ajout = (nom, d, v) => { if (!v) return; const L = parNom[nom] || (parNom[nom] = { nom, jours: {} }); L.jours[d] = v; };
+  for (const items of pages) {
+    // --- vue semaine : « Semaine : 2026 - 4 » + en-têtes « Lun. 19 Jan. » ---
+    const sem = items.map(it => /semaine\s*:?\s*(\d{4})\s*-\s*(\d{1,2})/i.exec(it.s)).find(Boolean);
+    const entetes = items.filter(it => /^(lun|mar|mer|jeu|ven|sam|dim)[a-z]*\.?\s*\d{1,2}\b/.test(plat(it.s))).sort((a, b) => a.x - b.x);
+    if (entetes.length >= 5) {
+      let lundi;
+      if (sem) { const y = +sem[1], wk = +sem[2], j4 = new Date(y, 0, 4); lundi = new Date(y, 0, 4 - ((j4.getDay() + 6) % 7) + (wk - 1) * 7); }
+      else { const m = /(\d{1,2})\s+([a-zA-Zéû]+)/.exec(entetes[0].s); const an = state.rules.saisonDebut ? +String(state.rules.saisonDebut).slice(-4) : new Date().getFullYear(); if (m && moisDe(m[2]) !== null) lundi = new Date(an, moisDe(m[2]), +m[1]); }
+      if (!lundi) continue;
+      const cols = entetes.slice(0, 7).map((it, k) => ({ x: it.x, d: iso(new Date(lundi.getFullYear(), lundi.getMonth(), lundi.getDate() + k)) }));
+      const xMin = cols[0].x - (cols[1] ? (cols[1].x - cols[0].x) / 2 : 40);
+      const noms = items.filter(it => it.x < xMin && /[a-z]/i.test(it.s) && !/semaine|alerte|salari/i.test(it.s) && /^[A-ZÀ-Ü' -]{2,}\s+[A-Za-zÀ-ÿ' -]+$/.test(it.s));
+      if (!noms.length) continue;
+      const g = cellulesPdf(items, cols, noms);
+      noms.forEach((n, ri) => cols.forEach((c, ci) => ajout(n.s, c.d, g.get(ri, ci))));
+      continue;
+    }
+    // --- récapitulatif annuel : titre « … Salarié NOM Prénom - Contrat … », colonnes 1 à 31, lignes « juin 2026 » ---
+    const titre = items.map(it => /salari\S*\s+(.+?)\s+-\s+contrat/i.exec(it.s) || /salari\S*\s+([A-ZÀ-Ü' -]{2,}\s+[A-Za-zÀ-ÿ'-]+)/i.exec(it.s)).find(Boolean);
+    const nums = items.filter(it => /^\d{1,2}$/.test(it.s) && +it.s >= 1 && +it.s <= 31);
+    const yEntete = mediane(nums.filter(it => it.s === '1' || it.s === '15' || it.s === '31').map(it => it.y));
+    const jours = []; nums.filter(it => Math.abs(it.y - yEntete) < 3).forEach(it => { if (!jours.some(j => j.d === +it.s)) jours.push({ x: it.x, d: +it.s }); });
+    jours.sort((a, b) => a.d - b.d);
+    if (jours.length < 28 || !titre) continue;
+    const xMin = jours[0].x - (jours[1].x - jours[0].x) / 2;
+    const etiquettes = items.filter(it => it.x < xMin && moisDe(it.s.split(/\s+/)[0]) !== null);
+    const lignes = etiquettes.map(et => {
+      let an = (/(\d{4})/.exec(et.s) || [])[1];
+      if (!an) { const proche = items.filter(it => it.x < xMin && /^\d{4}$/.test(it.s)).sort((a, b) => Math.abs(a.y - et.y) - Math.abs(b.y - et.y))[0]; an = proche && proche.s; }
+      const autreY = an && !/(\d{4})/.test(et.s) ? (items.find(it => it.s === an && it.x < xMin && Math.abs(it.y - et.y) < 20) || {}).y : null;
+      return { y: autreY != null ? (et.y + autreY) / 2 : et.y, mois: moisDe(et.s.split(/\s+/)[0]), an: +an };
+    }).filter(l => l.an);
+    if (!lignes.length) continue;
+    const nom = titre[1].trim();
+    const g = cellulesPdf(items, jours.map(j => ({ x: j.x })), lignes);
+    lignes.forEach((l, ri) => jours.forEach((j, ci) => { const dt = new Date(l.an, l.mois, j.d); if (dt.getMonth() === l.mois) ajout(nom, iso(dt), g.get(ri, ci)); }));
+  }
+  const lignes = Object.values(parNom);
+  if (!lignes.length) throw new Error('Mise en page non reconnue. Ce lecteur attend un PDF RHéa avec du texte (vue semaine ou récapitulatif annuel). Un PDF scanné ou une photo ne contient pas de texte lisible.');
+  return { lignes };
+}
+
+/* Fenêtre d'import */
+let importData = null;
+function ouvrirImport() {
+  const lundi = weekDate(state.week), dim = weekDate(state.week + 3, 6);
+  $('#mbox').className = 'mbox large';
+  $('#mbox').innerHTML = `<div class="mh"><span>📥 Importer des plannings (CSV ou PDF)</span><button class="icon" id="iX">✕</button></div>
+    <div class="mb">
+      <div class="hint" style="font-size:12.5px;line-height:1.55">
+        <b>CSV</b> (Excel, Google Sheets) : une ligne par salarié (« NOM Prénom »), une colonne par date (jj/mm/aaaa). Dans les cases : <b>08:30-17:30</b>, <b>RH</b>, <b>CP</b>, <b>JF</b>, <b>SOLI</b>, <b>FORM</b>, <b>REC</b>, <b>MAL</b> ; deux créneaux : <b>08:00-12:00+13:00-17:00</b>.
+        Ou une ligne par créneau : <i>Salarié ; Date ; Début ; Fin ; Type</i>.<br>
+        <b>PDF</b> : export RHéa contenant du texte (vue semaine ou récapitulatif annuel) — <i>lecture à vérifier dans l'aperçu</i>.</div>
+      <label class="l">Fichier à remplir (CSV avec vos salariés et les dates choisies)</label>
+      <div class="dates">du <input type="text" id="iDu" value="${fd(lundi)}"> au <input type="text" id="iAu" value="${fd(dim)}"> <button class="btn sm" id="iModele">⬇ Télécharger le CSV à remplir</button></div>
+      <textarea id="iCsvTxt" style="display:none" readonly></textarea>
+      <label class="l">Fichier à importer</label>
+      <input type="file" id="iFile" accept=".csv,.txt,.pdf,text/csv,application/pdf">
+      <div id="iApercu" style="margin-top:8px"></div>
+      <label style="display:flex;gap:6px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" id="iRemp"> Remplacer ce qui existe déjà (sinon, seuls les <b>&nbsp;jours vides&nbsp;</b> sont remplis)</label>
+    </div>
+    <div class="mf"><span class="hint" id="iRes"></span><span><button class="btn" id="iAnnuler">Annuler</button> <button class="btn primary" id="iOk" disabled>Importer</button></span></div>`;
+  $('#modal').classList.add('on');
+  importData = null;
+  $('#iX').onclick = $('#iAnnuler').onclick = fermerModele;
+  $('#iModele').onclick = telechargerCsvModele;
+  $('#iRemp').onchange = afficherImport;
+  $('#iFile').onchange = async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    $('#iApercu').innerHTML = '<span class="hint">Lecture du fichier…</span>'; $('#iOk').disabled = true;
+    try {
+      importData = /\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? analyserPdf(await lirePdf(f)) : analyserCsv(lireCsv(await f.text()));
+      importData.lignes.forEach(L => { const e = trouverSalarie(L.nom); L.cible = e ? e.id : '__creer'; });
+      afficherImport();
+    } catch (e) { importData = null; $('#iApercu').innerHTML = `<div class="apercu" style="color:var(--neg)">⚠ ${esc(e.message || e)}</div>`; }
+  };
+  $('#iOk').onclick = () => {
+    if (!importData) return;
+    const remp = $('#iRemp').checked, cpt = nouveauCompteur(); let crees = 0;
+    for (const L of importData.lignes) {
+      if (L.cible === '__ignorer') continue;
+      if (L.cible === '__creer') {
+        const mots = L.nom.trim().split(/\s+/), nomM = mots.filter(m => m === m.toUpperCase() && /[A-Z]/.test(m));
+        const nouveau = { id: 'S' + newId().slice(1), nom: nomM.join(' ') || mots[0], prenom: mots.filter(m => !nomM.includes(m)).join(' ') || '', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '', objectif: null };
+        state.emps.push(nouveau); L.cible = nouveau.id; crees++;
+      }
+      for (const [d, v] of Object.entries(L.jours)) {
+        if (!v || v.startsWith('?')) continue;
+        const di = dayIndex(parseIso(d)), w = Math.floor(di / 7);
+        poserJour(L.cible, w, di - w * 7, v, remp, cpt);
+      }
+    }
+    if (crees) saveSettings();
+    fermerModele(); renderAll();
+    toast(resumeCompteur(cpt) + (crees ? ` · ${crees} salarié(s) créé(s) (à compléter dans Réglages)` : ''));
+  };
+}
+function afficherImport() {
+  if (!importData) return;
+  const remp = $('#iRemp').checked;
+  const dates = [...new Set(importData.lignes.flatMap(L => Object.keys(L.jours)))].sort();
+  let ok = 0, bad = 0, plein = 0;
+  const opts = L => `<option value="__creer" ${L.cible === '__creer' ? 'selected' : ''}>+ créer « ${esc(L.nom)} »</option><option value="__ignorer" ${L.cible === '__ignorer' ? 'selected' : ''}>— ne pas importer —</option>`
+    + state.emps.map(e => `<option value="${esc(e.id)}" ${L.cible === e.id ? 'selected' : ''}>${esc(e.prenom)} ${esc(e.nom)}</option>`).join('');
+  let h = '<div class="imp-wrap"><table class="imp"><thead><tr><th class="nm">Nom dans le fichier → salarié</th>' + dates.map(d => { const x = parseIso(d); return `<th>${DAYN[(x.getDay() + 6) % 7]}<br>${fdShort(x)}</th>`; }).join('') + '</tr></thead><tbody>';
+  importData.lignes.forEach((L, li) => {
+    h += `<tr><td class="nm"><b>${esc(L.nom)}</b><br><select data-il="${li}">${opts(L)}</select></td>`;
+    dates.forEach(d => {
+      const v = L.jours[d] || ''; if (!v) { h += '<td></td>'; return; }
+      const lisible = !v.startsWith('?') && v.split('+').every(lireCaseModele);
+      let rempli = false;
+      if (lisible && L.cible && !L.cible.startsWith('__') && !remp) { const di = dayIndex(parseIso(d)), w = Math.floor(di / 7); rempli = getSlots(w).some(s => s.emp === L.cible && Math.floor(s.start / DAY) === di - w * 7); }
+      if (L.cible === '__ignorer') { h += `<td class="plein">${esc(v)}</td>`; return; }
+      if (!lisible) bad++; else if (rempli) plein++; else ok++;
+      h += `<td class="${!lisible ? 'bad' : rempli ? 'plein' : 'ok'}" title="${!lisible ? 'Illisible : ignoré' : rempli ? 'Jour déjà rempli : gardé' : 'Sera importé'}">${esc(v.replace(/^\?/, ''))}</td>`;
+    });
+    h += '</tr>';
+  });
+  $('#iApercu').innerHTML = h + '</tbody></table></div>';
+  $('#iApercu').querySelectorAll('[data-il]').forEach(sel => sel.onchange = () => { importData.lignes[+sel.dataset.il].cible = sel.value; afficherImport(); });
+  $('#iRes').innerHTML = `<b style="color:#065f46">${ok}</b> jour(s) à importer · <b style="color:#991b1b">${bad}</b> illisible(s) · ${plein} déjà rempli(s)`;
+  $('#iOk').disabled = ok === 0;
+}
+function telechargerCsvModele() {
+  const du = parseFd($('#iDu').value), au = parseFd($('#iAu').value);
+  if (!du || !au || au < du) return toast('Vérifiez les dates (jj/mm/aaaa).');
+  const dates = []; for (let d = new Date(du); d <= au; d.setDate(d.getDate() + 1)) dates.push(new Date(d));
+  const cellule = (eId, d) => { const di = dayIndex(d), w = Math.floor(di / 7), j = di - w * 7;
+    return getSlots(w).filter(s => s.emp === eId && Math.floor(s.start / DAY) === j).sort((a, b) => a.start - b.start)
+      .map(s => { const t = type(s.type); if (t.mode === 'jour') return Object.keys(CODES_MODELE).find(k => CODES_MODELE[k] === s.type) || t.nom; return tv(s.start) + '-' + tv(s.end); }).join('+'); };
+  const lignes = [['Salarié', ...dates.map(fd)], ...visibleEmps().map(e => [e.nom + ' ' + e.prenom, ...dates.map(d => cellule(e.id, d))])];
+  const csv = lignes.map(l => l.map(c => /[;"\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `planning_${iso(du)}_${iso(au)}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  $('#iCsvTxt').style.display = 'block'; $('#iCsvTxt').value = csv;
+  toast('CSV prêt : s\'il ne se télécharge pas, copiez le texte affiché et collez-le dans un tableur.');
+}
+$('#openImport').onclick = ouvrirImport;
 $('#modal').addEventListener('click', ev => { if (ev.target.id === 'modal') fermerModele(); });
 
 /* ---------- navigation ---------- */
