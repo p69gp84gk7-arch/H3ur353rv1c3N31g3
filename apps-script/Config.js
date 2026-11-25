@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1XxH6M-GFu4T4znMcR0zhkvmvTTeoTQzN6MFwVMWgBFA',
   // À augmenter à chaque changement de la structure ci-dessous :
   // le programme ajoute alors lui-même les onglets / colonnes manquants.
-  SCHEMA_VERSION: 6,
+  SCHEMA_VERSION: 7,
 };
 
 /**
@@ -120,6 +120,12 @@ const SCHEMA = [
     name: 'Périodes',
     columns: [{ key: 'Nom' }, { key: 'Du', type: 'date' }, { key: 'Au', type: 'date' }, { key: 'Base hebdo (h)' }],
     defaults: [['Période forte (hiver)', '02/11/2026', '28/03/2027', 40]],
+  },
+  {
+    // v7 : comptes de l'application (le mot de passe n'est jamais stocké, seulement son empreinte)
+    name: 'Comptes',
+    columns: [{ key: 'Identifiant' }, { key: 'Nom affiché' }, { key: 'Rôle' }, { key: 'Actif' }, { key: 'Empreinte' }, { key: 'Sel' },
+      { key: 'Créé le', type: 'datetime' }, { key: 'Dernière connexion', type: 'datetime' }],
   },
   {
     name: 'Journal',
