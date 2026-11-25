@@ -68,14 +68,20 @@ jobs:
         env:
           DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
         run: |
-          trouver() { clasp deployments | grep -v '@HEAD' | grep -oE 'AKfy[A-Za-z0-9_-]+' | head -1 || true; }
+          # clasp écrit une partie de ses messages sur la sortie d'erreur : on capture les deux (2>&1)
+          trouver() { clasp deployments 2>&1 | grep -v '@HEAD' | grep -oE 'AKfy[A-Za-z0-9_-]+' | head -1 || true; }
           [ -z "$DEPLOYMENT_ID" ] && DEPLOYMENT_ID=$(trouver)
           if [ -n "$DEPLOYMENT_ID" ]; then
             clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "Version ${GITHUB_SHA::7}"
           else
             echo "Première mise en ligne : création de la page web."
-            clasp deploy --description "Version ${GITHUB_SHA::7}"
-            DEPLOYMENT_ID=$(trouver)
+            SORTIE=$(clasp deploy --description "Version ${GITHUB_SHA::7}" 2>&1)
+            echo "$SORTIE"
+            DEPLOYMENT_ID=$(echo "$SORTIE" | grep -oE 'AKfy[A-Za-z0-9_-]+' | head -1 || true)
+          fi
+          if [ -z "$DEPLOYMENT_ID" ]; then
+            echo "::error::Adresse de la page web introuvable. Renseignez la variable APPS_SCRIPT_DEPLOYMENT_ID (Settings › Secrets and variables › Actions › Variables)."
+            exit 1
           fi
           URL="https://script.google.com/macros/s/$DEPLOYMENT_ID/exec"
           echo "Adresse du planning : $URL"
