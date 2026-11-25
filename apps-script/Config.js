@@ -47,7 +47,7 @@ const SCHEMA = [
       ['repos_hebdo', 'Repos hebdo', '#64748b', 'Journée entière', false, 0, false, false, 'RH, REPOS'],
       ['ferie', 'Férié chômé', '#be123c', 'Journée entière', true, 7, false, false, 'JF, FERIE'],
       ['conges', 'Congés payés', '#a16207', 'Journée entière', true, 7, false, false, 'CP, CA, CONGES'],
-      ['recup', 'Récupération', '#7e3fbf', 'Journée entière', true, 7, false, true, 'REC, RECUP, RTT'],
+      ['recup', 'Récupération', '#7e3fbf', 'Journée entière', true, 7, false, true, 'REC, RECUP'],
       ['maladie', 'Maladie / absence', '#57534e', 'Journée entière', true, 7, false, false, 'MAL, MALADIE, ABSENCE'],
       ['soli', 'Journée de solidarité', '#60a5fa', 'Journée entière', true, 7, false, false, 'SOLI, SOLIDARITE'], // v3
     ],

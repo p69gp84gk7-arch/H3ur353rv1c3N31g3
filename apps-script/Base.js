@@ -124,7 +124,7 @@ function mettreAJourBase() {
 
 /** Corrections de données lors d'un changement de version. Ajoute ou corrige, ne supprime jamais. */
 function migrer_(ss, avant, changements) {
-  if (avant < 5) remplirSiVide_(ss, 'Types', 'ID', 'Abréviations', {"travail_jour": "", "travail_nuit": "", "formation": "FORM, FORMATION", "astreinte": "AST, ASTREINTE", "repos_hebdo": "RH, REPOS", "ferie": "JF, FERIE", "conges": "CP, CA, CONGES", "recup": "REC, RECUP, RTT", "maladie": "MAL, MALADIE, ABSENCE", "soli": "SOLI, SOLIDARITE"}, changements);
+  if (avant < 5) remplirSiVide_(ss, 'Types', 'ID', 'Abréviations', {"travail_jour": "", "travail_nuit": "", "formation": "FORM, FORMATION", "astreinte": "AST, ASTREINTE", "repos_hebdo": "RH, REPOS", "ferie": "JF, FERIE", "conges": "CP, CA, CONGES", "recup": "REC, RECUP", "maladie": "MAL, MALADIE, ABSENCE", "soli": "SOLI, SOLIDARITE"}, changements);
   if (avant < 4) { // plafond annuel d'heures sup (l'onglet Périodes est créé avec ses valeurs de départ)
     const d = SCHEMA.filter(x => x.name === 'Règles')[0];
     ajouterSiAbsent_(ss, 'Règles', 'Clé', d.defaults.map(l => { const o = {}; d.columns.forEach((c, i) => { o[c.key] = texteVersDate_(l[i]); }); return o; }), changements);
