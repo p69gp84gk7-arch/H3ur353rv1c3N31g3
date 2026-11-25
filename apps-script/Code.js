@@ -20,7 +20,8 @@ function menuMettreAJour() {
 
 /** Page web du planning (ordinateur et smartphone). */
 function doGet() {
-  verifierBaseSiBesoin_();
+  // En cas de refus d'accès, la page s'affiche quand même et explique quoi faire.
+  try { verifierBaseSiBesoin_(); } catch (e) { console.warn(e); }
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Heures Service Neige')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');

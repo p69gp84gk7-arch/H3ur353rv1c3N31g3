@@ -88,3 +88,19 @@ L'**adresse du planning** est affichée dans le résumé du robot « Déployer v
 (elle ne change pas d'une mise à jour à l'autre : mettez-la en favori sur ordinateur et smartphone).
 À la première ouverture, Google demande une autorisation : « Paramètres avancés » →
 « Accéder à Heures Service Neige » → « Autoriser ».
+
+---
+
+## Donner l'accès au planning à un autre chef de service
+
+Le planning est réservé aux personnes qui peuvent **modifier** le Google Sheet.
+
+1. Ouvrez le Google Sheet « Heures Service Neige – Base de données ».
+2. Bouton **Partager** (en haut à droite) → saisissez l'adresse Gmail du chef → rôle **Éditeur** → **Envoyer**.
+3. Envoyez-lui l'adresse du planning (celle de votre favori).
+4. À sa première ouverture, Google lui demande une autorisation :
+   « Paramètres avancés » → « Accéder à Heures Service Neige » → « Autoriser ».
+
+Pour retirer l'accès : **Partager** → à côté de son nom → **Supprimer l'accès**.
+Une personne qui n'a pas le droit de modifier voit le message « Accès refusé » avec ces explications.
+Chaque modification indique qui l'a faite (colonne « Modifié par » et onglet Journal).

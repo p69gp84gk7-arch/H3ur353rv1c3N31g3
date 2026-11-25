@@ -121,6 +121,15 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .pop .calc b{font-size:13.5px}
 .pop .auto{font-size:11.5px;color:#3730a3;margin:-4px 0 8px}
 .pop .pb{display:flex;justify-content:space-between}
+.pop{max-height:92vh;overflow:auto}
+.pcopy{border-top:1px solid var(--line);margin:2px 0 10px;padding-top:8px}
+.pcopy summary{cursor:pointer;font-weight:650;color:var(--accent)}
+.pcl{font-size:12px;color:var(--muted);margin:8px 0 4px}
+.pcd{display:flex;flex-wrap:wrap;gap:4px}
+.pop .pcd label,.pop .pce label{display:inline-flex;flex-direction:row;align-items:center;gap:5px;font-size:12.5px;color:var(--ink);margin:0}
+.pop .pcd label{border:1px solid var(--line2);border-radius:6px;padding:2px 6px}
+.pce{display:flex;flex-direction:column;gap:3px;max-height:140px;overflow:auto}
+.pcopy .btn{margin-top:8px;width:100%}
 
 /* --- récap --- */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
@@ -235,8 +244,8 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
     </div>
     <div class="mdays mob-only" id="mdays" style="display:none"></div>
     <div class="tools" id="tools"></div>
-    <p class="help desk-only"><b>1.</b> Choisissez un type &nbsp;·&nbsp; <b>2.</b> Glissez la souris sur la ligne d'un salarié &nbsp;·&nbsp; Cliquez sur un créneau pour le modifier (pause repas, horaires…), tirez ses bords pour l'allonger, faites-le glisser pour le déplacer. Les heures entre 21h et 6h passent en nuit automatiquement.</p>
-    <p class="help mob-only">Choisissez un type, puis glissez le doigt sur la barre d'un salarié, ou touchez « + Ajouter ». Touchez un créneau pour le modifier.</p>
+    <p class="help desk-only"><b>1.</b> Choisissez un type &nbsp;·&nbsp; <b>2.</b> Glissez la souris sur la ligne d'un salarié &nbsp;·&nbsp; Cliquez sur un créneau pour le modifier (pause repas, horaires…), tirez ses bords pour l'allonger, faites-le glisser pour le déplacer (même vers un autre salarié). <b>Copier :</b> Ctrl (ou Alt) + glisser un créneau, ou bouton « 📋 Copier » dans sa bulle. Les heures entre 21h et 6h passent en nuit automatiquement.</p>
+    <p class="help mob-only">Choisissez un type, puis glissez le doigt sur la barre d'un salarié, ou touchez « + Ajouter ». Touchez un créneau pour le modifier ou le copier (📋 dans la bulle).</p>
     <div class="gridwrap desk-only"><div class="grid" id="grid"></div></div>
     <div class="legend desk-only" id="legend"></div>
     <div class="detail desk-only" id="detail"></div>
@@ -733,7 +742,8 @@ function onDown(ev) {
     const s = getSlots(state.week).find(x => x.id === slotEl.dataset.id);
     if (state.tool === 'gomme') { removeSlot(s); renderAll(); return; }
     const kind = ev.target.classList.contains('h-l') ? 'l' : ev.target.classList.contains('h-r') ? 'r' : 'move';
-    drag = { kind, s, orig: { start: s.start, end: s.end }, x0: ev.clientX, rect, span, moved: false };
+    const copie = kind === 'move' && (ev.ctrlKey || ev.altKey || ev.metaKey);
+    drag = { kind, s, orig: { start: s.start, end: s.end }, x0: ev.clientX, y0: ev.clientY, rect, span, moved: false, copie, clone: null };
   } else {
     if (state.tool === 'gomme') return;
     drag = { kind: 'new', emp: e, a: toMin(ev.clientX), rect, o, span, toMin, cand: null, err: false, bandSlot, x0: ev.clientX, moved: false };
@@ -750,16 +760,23 @@ function updateNew(m) {
 }
 function onMove(ev) {
   if (!drag) return;
-  if (Math.abs(ev.clientX - drag.x0) > 4) drag.moved = true;
+  if (Math.abs(ev.clientX - drag.x0) > 4 || (drag.kind === 'move' && Math.abs(ev.clientY - drag.y0) > 6)) drag.moved = true;
   if (!drag.moved) return;
   if (drag.kind === 'new') { updateNew(drag.toMin(ev.clientX)); return; }
+  if (drag.copie && !drag.clone) { // Ctrl/Alt + glisser : on déplace une copie, l'original reste
+    drag.clone = { ...drag.s, id: newId() }; getSlots(state.week).push(drag.clone); drag.s = drag.clone;
+  }
   const s = drag.s, t = type(s.type), unit = t.mode === 'jour' ? DAY : state.step;
   const delta = Math.round((ev.clientX - drag.x0) / drag.rect.width * drag.span / unit) * unit;
   const c = { ...s, start: drag.orig.start, end: drag.orig.end };
-  if (drag.kind === 'move') { c.start += delta; c.end += delta; }
+  if (drag.kind === 'move') {
+    c.start += delta; c.end += delta;
+    const sous = document.elementFromPoint(ev.clientX, ev.clientY), tr = sous && sous.closest('.track');
+    if (tr && +tr.dataset.span === drag.span) c.emp = tr.dataset.emp; // glissé sur la ligne d'un autre salarié
+  }
   if (drag.kind === 'l') c.start = Math.min(drag.orig.end - unit, drag.orig.start + delta);
   if (drag.kind === 'r') c.end = Math.max(drag.orig.start + unit, drag.orig.end + delta);
-  if (validSlot(c) && !overlaps(c, s.id)) { s.start = c.start; s.end = c.end; autoType(s); renderPlanning(); }
+  if (validSlot(c) && !overlaps(c, s.id)) { s.start = c.start; s.end = c.end; s.emp = c.emp; autoType(s); renderPlanning(); }
 }
 function onUp(ev) {
   if (!drag) return;
@@ -770,7 +787,9 @@ function onUp(ev) {
     else if (d.cand) { const ns = { id: newId(), ...d.cand }; getSlots(state.week).push(ns); markSlot(ns); }
     renderAll(); return;
   }
-  if (!d.moved) openPop(d.s, ev.clientX, ev.clientY); else markSlot(d.s);
+  if (d.clone && overlaps(d.clone, d.clone.id)) { state.slots[state.week] = getSlots(state.week).filter(z => z !== d.clone); toast('Copie annulée : la place est déjà occupée.'); }
+  else if (!d.moved) openPop(d.s, ev.clientX, ev.clientY);
+  else { markSlot(d.s); if (d.clone) toast('Créneau copié'); }
   renderAll();
 }
 document.addEventListener('click', ev => { if (ev.target.closest('#v-planning')) onSelect(ev); });
@@ -778,6 +797,22 @@ document.addEventListener('pointerdown', onDown);
 document.addEventListener('pointermove', onMove);
 document.addEventListener('pointerup', onUp);
 document.addEventListener('pointercancel', () => { if (drag) { drag = null; renderAll(); } });
+/** Copie un créneau vers d'autres jours et/ou d'autres salariés (mêmes heures). */
+function copierCreneau(s, jours, salaries) {
+  const j0 = Math.floor(s.start / DAY);
+  if (!jours.length) jours = [j0];
+  if (!salaries.length) salaries = [s.emp];
+  let faits = 0, occupes = 0;
+  for (const e of salaries) for (const j of jours) {
+    if (e === s.emp && j === j0) continue;
+    const c = autoType({ ...s, id: newId(), emp: e, start: s.start + (j - j0) * DAY, end: s.end + (j - j0) * DAY });
+    if (!validSlot(c) || overlaps(c)) { occupes++; continue; }
+    getSlots(state.week).push(c); markSlot(c); faits++;
+  }
+  closePop(); renderAll();
+  toast(faits ? `${faits} créneau${faits > 1 ? 'x' : ''} copié${faits > 1 ? 's' : ''}` + (occupes ? ` · ${occupes} ignoré${occupes > 1 ? 's' : ''} (place déjà occupée)` : '')
+              : (occupes ? 'Rien copié : les places choisies sont déjà occupées.' : 'Cochez au moins un autre jour ou un autre salarié.'));
+}
 function addOnDay(e, ev) { // bouton « + Ajouter » (smartphone)
   const t = type(state.tool === 'gomme' ? 'travail_jour' : state.tool), d = state.mday;
   const c = autoType(t.mode === 'jour' ? { emp: e, type: t.id, start: d * DAY, end: (d + 1) * DAY } : { emp: e, type: t.id, start: d * DAY + 8 * 60, end: d * DAY + 16 * 60 });
@@ -803,6 +838,13 @@ function openPop(s, x, y) {
     ${work ? `<label>Pause repas<select id="pPause">${pauseOpts}</select></label>` : ''}
     <div class="calc">${jour ? `${Math.round((s.end - s.start) / DAY)} jour(s) × forfait ${t.forfait}h = <b>${fmtH(t.compteur ? t.forfait * 60 * Math.round((s.end - s.start) / DAY) : 0)}</b> comptées` :
       work ? `Présence ${fmtH(s.end - s.start)} − pause ${fmtH(p)} = <b>${fmtH(workMin(s))} de travail</b>${nw ? '<br>dont ' + fmtH(nw) + ' de nuit' : ''}` : `${fmtH(s.end - s.start)} · non compté dans les heures`}</div>
+    <details class="pcopy" ${state.copyOpen ? 'open' : ''}><summary>📋 Copier ce créneau…</summary>
+      <div class="pcl">Vers les jours (mêmes heures) :</div>
+      <div class="pcd">${DAYN.map((n, i) => `<label><input type="checkbox" data-cday="${i}">${dayName(state.week, i)}</label>`).join('')}</div>
+      <div class="pcl">Pour les salariés :</div>
+      <div class="pce">${state.emps.filter(e => e.actif).map(e => `<label><input type="checkbox" data-cemp="${esc(e.id)}" ${e.id === s.emp ? 'checked' : ''}>${esc(e.prenom)} ${esc(e.nom)}</label>`).join('')}</div>
+      <button class="btn" id="pCopy">Copier</button>
+    </details>
     <div class="pb"><button class="btn danger" id="pDel">Supprimer</button><button class="btn primary" id="pOk">OK</button></div>`;
   pop.style.display = 'block';
   if (!isMob()) { pop.style.left = Math.min(x + 8, innerWidth - 310) + 'px'; pop.style.top = Math.max(8, Math.min(y + 8, innerHeight - pop.offsetHeight - 8)) + 'px'; }
@@ -820,6 +862,10 @@ function openPop(s, x, y) {
   ['pType', 'pSD', 'pST', 'pED', 'pET', 'pPause'].forEach(id => { const el = $('#' + id); if (el) el.addEventListener('change', apply); });
   $('#pDel').onclick = () => { removeSlot(s); closePop(); renderAll(); };
   $('#pOk').onclick = $('#pX').onclick = closePop;
+  pop.querySelector('.pcopy').addEventListener('toggle', ev => { state.copyOpen = ev.target.open; });
+  $('#pCopy').onclick = () => copierCreneau(s,
+    [...pop.querySelectorAll('[data-cday]:checked')].map(x => +x.dataset.cday),
+    [...pop.querySelectorAll('[data-cemp]:checked')].map(x => x.dataset.cemp));
 }
 document.addEventListener('pointerdown', ev => { if (pop.style.display === 'block' && !pop.contains(ev.target) && !ev.target.closest('.slot,[data-add]')) closePop(); }, true);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closePop(); });
