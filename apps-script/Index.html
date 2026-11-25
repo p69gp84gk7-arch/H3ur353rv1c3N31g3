@@ -136,6 +136,14 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 
 /* --- récap --- */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.modebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-radius:10px;padding:6px 10px;margin-bottom:8px;border:1px solid var(--line);font-size:13px}
+.modebar.prevu{background:#eff6ff;border-color:#bfdbfe}.modebar.reel{background:#ecfdf5;border-color:#a7f3d0}.modebar.comp{background:#f5f3ff;border-color:#ddd6fe}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button.on{background:var(--brand);color:#fff;font-weight:650}
+.slot.prevu{background:transparent!important;border:2px dashed #475569;color:#334155;box-shadow:none;z-index:0;top:2px;bottom:2px;pointer-events:none;opacity:.85}
+.hm td.c.r{box-shadow:inset 0 -3px 0 #047857}
 .perchip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:650;background:#ede9fe;color:#4c1d95;white-space:nowrap}
 .perchip.n{background:#ecfccb;color:#3f6212}
 .dep{width:100%;margin-top:12px}
@@ -287,6 +295,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
       <button class="btn desk-only" id="copyPrev">Copier la semaine précédente</button>
     </div>
     <div class="mdays mob-only" id="mdays" style="display:none"></div>
+    <div class="modebar" id="modeBar"></div>
     <div class="tools" id="tools"></div>
     <p class="help desk-only"><b>1.</b> Choisissez un type &nbsp;·&nbsp; <b>2.</b> Glissez la souris sur la ligne d'un salarié &nbsp;·&nbsp; Cliquez sur un créneau pour le modifier (pause repas, horaires…), tirez ses bords pour l'allonger, faites-le glisser pour le déplacer (même vers un autre salarié). <b>Copier :</b> Ctrl (ou Alt) + glisser un créneau, ou bouton « 📋 Copier » dans sa bulle. Les heures entre 21h et 6h passent en nuit automatiquement.</p>
     <p class="help mob-only">Choisissez un type, puis glissez le doigt sur la barre d'un salarié, ou touchez « + Ajouter ». Touchez un créneau pour le modifier ou le copier (📋 dans la bulle).</p>
@@ -311,7 +320,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
     </div>
     <div class="card">
       <h3>Écart à la base de la semaine (35h ou 40h), semaine par semaine</h3>
-      <div class="sub">Rouge = sous la base (heures en −) · Orange = au-dessus (heures en +) · Vert = pile la base · Hachuré = pas encore planifié. Cliquez sur une case pour ouvrir la semaine.</div>
+      <div class="sub">Rouge = sous la base (heures en −) · Orange = au-dessus (heures en +) · Vert = pile la base · Souligné vert foncé = semaine pointée (réel) · Hachuré = pas encore planifié. Cliquez sur une case pour ouvrir la semaine.</div>
       <div class="hm" id="heatmap"></div>
     </div>
   </section>
@@ -406,6 +415,18 @@ const state = {
   stations: [], rules: { ...DEFAULT_RULES }, season: { start: 0, end: 51 },
   feries: [], types: [DEFAULT_TYPES.travail_jour, DEFAULT_TYPES.travail_nuit], emps: [], modeles: [], periodes: [], sheetUrl: '', user: '',
 };
+function lireMode() { try { const m = localStorage.getItem('hsn_mode'); return ['prevu', 'reel', 'comp'].includes(m) ? m : 'prevu'; } catch (e) { return 'prevu'; } }
+state.mode = lireMode();
+state.slotsV = { prevu: state.slots, reel: {} };
+const storeDe = v => state.slotsV[v === 'reel' ? 'reel' : 'prevu'];
+const versionDuMode = m => (m === 'reel' || m === 'comp' ? 'reel' : 'prevu');
+/** Exécute fn en travaillant sur la version v (« prevu » ou « reel ») des créneaux. */
+function dansVersion(v, fn) { const save = state.slots; state.slots = storeDe(v); try { return fn(); } finally { state.slots = save; } }
+function changerMode(m) {
+  state.mode = m; state.slots = storeDe(versionDuMode(m));
+  try { localStorage.setItem('hsn_mode', m); } catch (e) { /* navigation privée */ }
+  closePop(); renderAll();
+}
 function newId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
 /* ---------- dates (toujours jj/mm/aaaa) ---------- */
@@ -484,9 +505,11 @@ function slotFromServer(c) {
     start: (da - w * 7) * DAY + a.getHours() * 60 + a.getMinutes(),
     end: (dayIndex(b) - w * 7) * DAY + b.getHours() * 60 + b.getMinutes() };
   if (c.pause !== null && c.pause !== undefined) s.pause = c.pause;
-  if (s.end > s.start) getSlots(w).push(s);
+  s.version = c.version === 'reel' ? 'reel' : 'prevu';
+  const st = storeDe(s.version);
+  if (s.end > s.start) (st[w] || (st[w] = [])).push(s);
 }
-const slotToServer = (s, w) => ({ id: s.id, emp: s.emp, type: s.type, debut: dtStr(w, s.start), fin: dtStr(w, s.end), pause: s.pause == null ? null : s.pause });
+const slotToServer = (s, w) => ({ id: s.id, emp: s.emp, type: s.type, version: s.version === 'reel' ? 'reel' : 'prevu', debut: dtStr(w, s.start), fin: dtStr(w, s.end), pause: s.pause == null ? null : s.pause });
 function setSync(kind, msg) { const el = $('#sync'); el.className = 'sync ' + kind; el.textContent = msg; }
 
 function init() {
@@ -513,7 +536,7 @@ function onData(d) {
   BASE = mondayOfDate(sd);
   const ed = parseFd(String(state.rules.saisonFin || '')) || new Date(sd.getFullYear() + 1, sd.getMonth(), sd.getDate() - 1);
   state.season = { start: 0, end: Math.max(0, weekOffsetOf(ed)) };
-  state.slots = {};
+  state.slotsV = { prevu: {}, reel: {} }; state.slots = storeDe(versionDuMode(state.mode));
   d.creneaux.forEach(slotFromServer);
   TODAY = { w: weekOffsetOf(today), d: (today.getDay() + 6) % 7 };
   state.week = TODAY.w; state.mday = TODAY.d;
@@ -527,7 +550,7 @@ function onData(d) {
 /* Enregistrement des créneaux : regroupé et envoyé ~0,7 s après la dernière modification */
 const pending = { ups: new Map(), dels: new Set() };
 let saveTimer = null, saving = false;
-function markSlot(s, w = state.week) { pending.dels.delete(s.id); pending.ups.set(s.id, { s, w }); scheduleSave(); }
+function markSlot(s, w = state.week) { if (!s.version) s.version = state.slots === state.slotsV.reel ? 'reel' : 'prevu'; pending.dels.delete(s.id); pending.ups.set(s.id, { s, w }); scheduleSave(); }
 function removeSlotW(s, w) { state.slots[w] = getSlots(w).filter(x => x !== s); pending.ups.delete(s.id); pending.dels.add(s.id); scheduleSave(); }
 function removeSlot(s) { state.slots[state.week] = getSlots(state.week).filter(x => x !== s); pending.ups.delete(s.id); pending.dels.add(s.id); scheduleSave(); }
 function scheduleSave(delay = 700) { setSync('pending', '… Enregistrement'); clearTimeout(saveTimer); saveTimer = setTimeout(flushSlots, delay); }
@@ -690,6 +713,7 @@ function trackHtml(e, w, o, span) {
     const f = ferieAt(w, d);
     h += `<div class="tday ${d >= 5 ? 'we' : ''} ${f ? 'fer' : ''}" style="left:${(d * DAY - o) / span * 100}%;width:${DAY / span * 100}%;${dayBg}"></div>`;
   }
+  if (state.mode !== 'prevu') for (const s of (state.slotsV.prevu[w] || [])) if (s.emp === e) h += prevuHtml(s, o, span);
   for (const s of getSlots(w - 1)) if (s.emp === e && s.end > WEEK) h += slotHtml({ ...s, start: s.start - WEEK, end: s.end - WEEK }, o, span, true);
   for (const s of empSlots(e, w)) h += slotHtml(s, o, span);
   const em = embaucheMin(emp(e), w);
@@ -702,8 +726,53 @@ function trackHtml(e, w, o, span) {
   return `<div class="track" data-emp="${e}" data-o="${o}" data-span="${span}">${h}</div>`;
 }
 
+/* ---------- prévisionnel / réel ---------- */
+function renderModeBar() {
+  const m = state.mode;
+  const txt = { prevu: '✏ Vous modifiez le <b>PRÉVISIONNEL</b>.', reel: '✏ Vous modifiez le <b>RÉEL</b> (heures vraiment faites). Le prévisionnel est en pointillés.', comp: '👁 Comparaison : <b>plein = réel</b>, <b>pointillés = prévisionnel</b>. Lecture seule.' }[m];
+  $('#modeBar').className = 'modebar ' + m;
+  $('#modeBar').innerHTML = `<div class="seg">${[['prevu', 'Prévisionnel'], ['reel', 'Réel'], ['comp', 'Comparaison']].map(([k, l]) => `<button data-mode="${k}" class="${m === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <span>${txt}</span>${m === 'reel' ? '<span class="spacer"></span><button class="btn sm" id="repPrevu" title="Recopie le prévisionnel de la semaine dans le réel, pour les jours pas encore pointés">📋 Reprendre le prévisionnel de la semaine</button>' : ''}`;
+  $('#tools').style.display = m === 'comp' ? 'none' : '';
+}
+$('#modeBar').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-mode]'); if (b) return changerMode(b.dataset.mode);
+  if (ev.target.id === 'repPrevu') reprendrePrevu();
+});
+/** Recopie le prévisionnel de la semaine dans le réel, pour les jours sans réel. */
+function reprendrePrevu() {
+  const w = state.week, P = state.slotsV.prevu[w] || [], Rv = state.slotsV.reel;
+  let n = 0;
+  for (const e of visibleEmps()) {
+    const pleins = new Set((Rv[w] || []).filter(x => x.emp === e.id).map(x => Math.floor(x.start / DAY)));
+    for (const s of P.filter(x => x.emp === e.id && !pleins.has(Math.floor(x.start / DAY)))) {
+      const c = { ...s, id: newId(), version: 'reel' };
+      (Rv[w] || (Rv[w] = [])).push(c); markSlot(c, w); n++;
+    }
+  }
+  renderAll();
+  toast(n ? `${n} créneau(x) repris du prévisionnel : corrigez ce qui a changé.` : 'Rien à reprendre : le réel de cette semaine est déjà rempli (ou pas de prévisionnel).');
+}
+function prevuHtml(s, o, span) {
+  if (s.end <= o || s.start >= o + span) return '';
+  const t = type(s.type), jour = t.mode === 'jour';
+  return `<div class="slot prevu" style="left:${(s.start - o) / span * 100}%;width:${(s.end - s.start) / span * 100}%" title="Prévu : ${esc(t.nom)}${jour ? '' : ' ' + hm(s.start) + '–' + hm(s.end, true)}"><span>${jour ? esc(abrevPrincipale(t) || t.nom) : hc(s.start) + '–' + hc(s.end, true)}</span></div>`;
+}
+
 /* ---------- PLANNING (ordinateur) ---------- */
+/** Comparaison : prévu, réel et écart pour un salarié et une semaine. */
+function compSemaine(eId, w) {
+  const aP = dansVersion('prevu', () => analyze(eId, w)), aR = dansVersion('reel', () => analyze(eId, w));
+  const pointe = (state.slotsV.reel[w] || []).some(s => s.emp === eId);
+  return { aP, aR, pointe, ecart: aR.counter - aP.counter };
+}
+function celluleComp(e, w) {
+  const c = compSemaine(e.id, w);
+  return `<div class="sc num">${fmtH(c.aP.counter)}</div><div class="sc num">${c.pointe ? fmtH(c.aR.counter) : '<span class="hint">—</span>'}</div>`
+    + `<div class="sc">${c.pointe ? ecartHtml(c.ecart) : '<span class="hint">pas encore<br>pointé</span>'}</div>`;
+}
 function renderPlanning() {
+  renderModeBar();
   const w = state.week, R = state.rules, d0 = weekDate(w), d6 = weekDate(w, 6);
   $('#weeklabel').textContent = isMob() ? `S${isoWeek(d0)} · ${fdShort(d0)} → ${fd(d6)}` : `Semaine ${isoWeek(d0)} · du lun. ${fd(d0)} au dim. ${fd(d6)}`;
   stationChips($('#stationChips'));
@@ -718,7 +787,9 @@ function renderPlanning() {
     const f = ferieAt(w, d);
     h += `<div class="dh ${d >= 5 ? 'we' : ''} ${f ? 'fer' : ''}"><div class="dn">${DAYN[d]} <span>${fdShort(weekDate(w, d))}</span>${f ? `<b class="ferb ${f.chome ? '' : 'trav'}" title="${esc(f.nom)} — ${f.chome ? 'chômé' : 'travaillé'}">férié</b>` : ''}</div><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div></div>`;
   }
-  h += `</div><div class="sc">Heures<br>comptées</div><div class="sc">Écart<br>à ${fmtH(baseSemaine(w))}</div><div class="sc">dont<br>nuit</div><div class="sc">Contrôles<br>RH</div></div>`;
+  const comp = state.mode === 'comp';
+  h += comp ? `</div><div class="sc">Prévu</div><div class="sc">Réel</div><div class="sc">Écart<br>réel − prévu</div>` : `</div><div class="sc">Heures<br>comptées</div><div class="sc">Écart<br>à ${fmtH(baseSemaine(w))}</div><div class="sc">dont<br>nuit</div>`;
+  h += `<div class="sc">Contrôles<br>RH${comp ? ' (réel)' : ''}</div></div>`;
   const list = visibleEmps(), stations = state.station === 'Toutes' ? state.stations : [state.station];
   let tot = 0, nAlert = 0;
   for (const st of stations) {
@@ -729,9 +800,9 @@ function renderPlanning() {
       h += `<div class="prow ${state.sel === e.id ? 'sel' : ''}">
         <div class="pname" data-emp="${e.id}" title="Voir le détail des contrôles"><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb" title="Travailleur de nuit">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais" title="Saisonnier' + (e.embauche ? ', embauche le ' + esc(e.embauche) : '') + '">saisonnier</span>' : ''}</div></div>
         ${trackHtml(e.id, w, 0, WEEK)}
-        <div class="sc num" title="${esc((a.absences ? 'dont ' + fmtH(a.absences) + ' d\'absences au forfait. ' : '') + (a.pauses ? fmtH(a.pauses) + ' de pauses déduites.' : ''))}">${fmtH(a.counter)}</div>
+        ${comp ? celluleComp(e, w) : `<div class="sc num" title="${esc((a.absences ? 'dont ' + fmtH(a.absences) + ' d\'absences au forfait. ' : '') + (a.pauses ? fmtH(a.pauses) + ' de pauses déduites.' : ''))}">${fmtH(a.counter)}</div>
         <div class="sc">${a.avantEmb ? `<span class="hint" title="Embauche le ${esc(e.embauche)}">pas encore<br>embauché</span>` : ecartHtml(a.ecart)}${a.cible && a.cible !== state.rules.legale * 60 ? `<small class="hint" title="Objectif au prorata (embauche le ${esc(e.embauche)})">/ ${fmtH(a.cible)}</small>` : ''}</div>
-        <div class="sc num muted">${a.night ? fmtH(a.night) : '—'}</div>
+        <div class="sc num muted">${a.night ? fmtH(a.night) : '—'}</div>`}
         <div class="sc">${ctlHtml(e, a)}</div>
       </div>`;
     }
@@ -743,7 +814,7 @@ function renderPlanning() {
     <span>${ecartHtml(0)} pile</span><span>${ecartHtml(240)} dépassement</span><span>${ecartHtml(-180)} manquantes</span>
     <span class="spacer"></span><span class="summary">Semaine : <b>${fmtH(tot)}</b> comptées · <b>${nAlert}</b> salarié${nAlert > 1 ? 's' : ''} en alerte</span>`;
   const e = emp(state.sel);
-  $('#detail').innerHTML = e && list.includes(e) ? `<h3>${esc(e.prenom)} ${esc(e.nom)} — contrôles de la semaine</h3>` + detailHtml(e) : '<div class="hint">Cliquez sur le nom d\'un salarié (ou sur ses « Contrôles ») pour voir le détail des règles RH de la semaine.</div>';
+  $('#detail').innerHTML = e && list.includes(e) ? `<h3>${esc(e.prenom)} ${esc(e.nom)} — contrôles de la semaine${comp ? ' (réel)' : state.mode === 'reel' ? ' (réel)' : ' (prévisionnel)'}</h3>` + (comp ? (c => `<div class="sub">Prévu <b>${fmtH(c.aP.counter)}</b> · Réel <b>${c.pointe ? fmtH(c.aR.counter) : '—'}</b> · Écart réel − prévu : ${c.pointe ? ecartHtml(c.ecart) : 'pas encore pointé'}</div>`)(compSemaine(e.id, w)) : '') + detailHtml(e) : '<div class="hint">Cliquez sur le nom d\'un salarié (ou sur ses « Contrôles ») pour voir le détail des règles RH de la semaine.</div>';
 }
 function detailHtml(e) {
   const w = state.week, a = analyze(e.id, w);
@@ -777,7 +848,7 @@ function renderMobile() {
       const a = analyze(e.id, w), D = a.days[d];
       h += `<div class="mcard ${state.sel === e.id ? 'sel' : ''}">
         <div class="mhead" data-emp="${e.id}"><div><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais">saisonnier' + (e.embauche ? ' · ' + esc(e.embauche) : '') + '</span>' : ''}</div></div>
-          <div class="mstats"><span class="num" title="Heures comptées sur la semaine">${fmtH(a.counter)}</span>${a.avantEmb ? '<span class="hint">pas encore embauché</span>' : ecartHtml(a.ecart)}${ctlHtml(e, a, true)}</div></div>
+          <div class="mstats">${state.mode === 'comp' ? (c => `<span class="hint">prévu</span><span class="num">${fmtH(c.aP.counter)}</span><span class="hint">réel</span><span class="num">${c.pointe ? fmtH(c.aR.counter) : '—'}</span>${c.pointe ? ecartHtml(c.ecart) : ''}`)(compSemaine(e.id, w)) : `<span class="num" title="Heures comptées sur la semaine">${fmtH(a.counter)}</span>${a.avantEmb ? '<span class="hint">pas encore embauché</span>' : ecartHtml(a.ecart)}`}${ctlHtml(e, a, true)}</div></div>
         <div class="mtrack"><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div>${trackHtml(e.id, w, d * DAY, DAY)}</div>
         <div class="mfoot"><span>${dayName(w, d)} : ${D.work ? '<b style="color:var(--ink)">' + fmtH(D.work) + '</b> de travail · amplitude ' + fmtH(D.last - D.first) + (D.night ? ' · nuit ' + fmtH(D.night) : '') : 'pas de travail'}</span><button class="btn sm" data-add="${e.id}">+ Ajouter</button></div>
         ${state.sel === e.id ? '<div class="mdetail">' + detailHtml(e) + '</div>' : ''}
@@ -826,6 +897,7 @@ function onDown(ev) {
   if (ev.button > 0) return;
   if (ev.target.closest('[data-ctl],[data-add],[data-mday]') || (ev.target.closest('[data-emp]') && !ev.target.closest('.track'))) return;
   const track = ev.target.closest('.track'); if (!track) return;
+  if (state.mode === 'comp') { toast('Vue Comparaison (lecture seule) : choisissez « Réel » ou « Prévisionnel » pour modifier.'); return; }
   const rect = track.getBoundingClientRect(), e = track.dataset.emp, o = +track.dataset.o, span = +track.dataset.span;
   const toMin = x => o + Math.max(0, Math.min(1, (x - rect.left) / rect.width)) * span;
   let slotEl = ev.target.closest('.slot');
@@ -912,6 +984,7 @@ function copierCreneau(s, jours, salaries) {
               : (occupes ? 'Rien copié : places déjà occupées ou avant la date d\'embauche.' : 'Cochez au moins un autre jour ou un autre salarié.'));
 }
 function addOnDay(e, ev) { // bouton « + Ajouter » (smartphone)
+  if (state.mode === 'comp') return toast('Vue Comparaison (lecture seule) : choisissez « Réel » ou « Prévisionnel » pour modifier.');
   const t = type(state.tool === 'gomme' ? 'travail_jour' : state.tool), d = state.mday;
   const c = autoType(t.mode === 'jour' ? { emp: e, type: t.id, start: d * DAY, end: (d + 1) * DAY } : { emp: e, type: t.id, start: d * DAY + 8 * 60, end: d * DAY + 16 * 60 });
   if (avantEmbauche(c)) return toast(motifRefus(c));
@@ -980,17 +1053,23 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closePop()
 
 /* ---------- RÉCAP ---------- */
 function seasonStats(e) {
-  const S = state.season, z = { weeks: 0, tot: 0, neg: 0, pos: 0, recup: 0, alerts: 0, au35: 0, au48: 0, au10: 0, nuit: 0, dimanche: 0, ferie: 0 }; const cells = [];
+  const S = state.season, P = state.slotsV.prevu, Rv = state.slotsV.reel;
+  const z = { weeks: 0, tot: 0, neg: 0, pos: 0, recup: 0, alerts: 0, au35: 0, au48: 0, au10: 0, nuit: 0, dimanche: 0, ferie: 0, semReel: 0, ecartRP: 0 };
+  const cells = [], cellsR = [], a1 = (st, w) => (st[w] || []).some(s => s.emp === e);
   for (let w = S.start; w <= S.end; w++) {
-    if (!getSlots(w).some(s => s.emp === e)) { cells.push(null); continue; }
-    const a = analyze(e, w); z.weeks++; z.tot += a.counter; z.alerts += a.alerts.length; z.recup += a.recup;
+    const hasR = a1(Rv, w), hasP = a1(P, w);
+    cellsR.push(hasR);
+    if (!hasR && !hasP) { cells.push(null); continue; }
+    const a = dansVersion(hasR ? 'reel' : 'prevu', () => analyze(e, w)); // le réel quand il existe, sinon le prévu
+    if (hasR) { z.semReel++; if (hasP) z.ecartRP += a.counter - dansVersion('prevu', () => analyze(e, w)).counter; }
+    z.weeks++; z.tot += a.counter; z.alerts += a.alerts.length; z.recup += a.recup;
     for (const k of ['au35', 'au48', 'au10', 'nuit', 'dimanche', 'ferie']) z[k] += a.dep[k];
     if (a.avantEmb) { cells.push(null); continue; }
     if (a.ecart < 0) z.neg -= a.ecart; else z.pos += a.ecart; cells.push(a.ecart);
   }
   const objectif = (emp(e) && emp(e).objectif != null ? emp(e).objectif : state.rules.objectifAnnuel) * 60;
   const reste = objectif - z.tot, surplus = Math.max(0, -reste);
-  return { ...z, cells, objectif, reste, surplus, auPlafond: Math.max(0, surplus - state.rules.plafondHS * 60), solde: z.pos - z.neg - z.recup };
+  return { ...z, cells, cellsR, objectif, reste, surplus, auPlafond: Math.max(0, surplus - state.rules.plafondHS * 60), solde: z.pos - z.neg - z.recup };
 }
 function cellStyle(d) {
   if (d === 0) return 'background:#dcfce7;color:#166534';
@@ -1016,17 +1095,17 @@ function renderRecap() {
     <div class="kpi"><div class="k">Heures en − (sous la base)</div><div class="v neg">${fmtH(-sum('neg'))}</div></div>
     <div class="kpi"><div class="k">Fin de saison : heures qui manqueront</div><div class="v ${manque ? 'neg' : ''}">${fmtH(manque)}</div></div>
     <div class="kpi"><div class="k">Fin de saison : surplus</div><div class="v ${sum('surplus') ? 'pos' : ''}">${fmtH(sum('surplus'))}</div></div>`;
-  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th class="n">Objectif</th><th class="n">Planifié</th><th class="n">Fin de saison</th><th class="n">Heures en +</th><th class="n">Heures en −</th><th class="n">Solde</th><th class="n">Au-delà de ${R.legale}h</th><th class="n">Au-delà de ${R.maxSem}h</th><th class="n">Au-delà de ${R.maxJour}h/jour</th><th class="n">Nuit</th><th class="n">Dimanches</th><th class="n">Fériés trav.</th><th class="n">Alertes</th></tr></thead><tbody>` +
+  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th class="n">Objectif</th><th class="n" title="Réel quand la semaine est pointée, sinon prévisionnel">Planifié</th><th class="n">Pointé (réel)</th><th class="n">Réel − prévu</th><th class="n">Fin de saison</th><th class="n">Heures en +</th><th class="n">Heures en −</th><th class="n">Solde</th><th class="n">Au-delà de ${R.legale}h</th><th class="n">Au-delà de ${R.maxSem}h</th><th class="n">Au-delà de ${R.maxJour}h/jour</th><th class="n">Nuit</th><th class="n">Dimanches</th><th class="n">Fériés trav.</th><th class="n">Alertes</th></tr></thead><tbody>` +
     st.map(({ e, s }) => `<tr><td><b>${esc(e.prenom)} ${esc(e.nom)}</b>${e.contrat === 'saisonnier' ? ' <span class="nb sais">saisonnier</span>' : ''}</td><td>${esc(e.station)}</td>
-      <td class="n">${fmtH(s.objectif)}</td><td class="n">${fmtH(s.tot)}</td><td class="n">${projectionHtml(s)}</td>
+      <td class="n">${fmtH(s.objectif)}</td><td class="n">${fmtH(s.tot)}</td><td class="n">${s.semReel ? s.semReel + ' sem.' : '—'}</td><td class="n">${s.semReel ? ecartHtml(s.ecartRP) : '—'}</td><td class="n">${projectionHtml(s)}</td>
       <td class="n" style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</td><td class="n" style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</td>
       <td class="n" title="${s.recup ? 'dont ' + fmtH(s.recup) + ' de récupération déjà prise' : ''}">${ecartHtml(s.solde)}</td>
       <td class="n">${s.au35 ? fmtH(s.au35) : '—'}</td><td class="n" style="${s.au48 ? 'color:var(--neg);font-weight:700' : ''}">${s.au48 ? fmtH(s.au48) : '—'}</td><td class="n" style="${s.au10 ? 'color:var(--neg);font-weight:700' : ''}">${s.au10 ? fmtH(s.au10) : '—'}</td>
       <td class="n">${s.nuit ? fmtH(s.nuit) : '—'}</td><td class="n">${s.dimanche ? fmtH(s.dimanche) : '—'}</td><td class="n">${s.ferie ? fmtH(s.ferie) : '—'}</td>
       <td class="n" style="${s.alerts ? 'color:var(--neg);font-weight:700' : ''}">${s.alerts || '—'}</td></tr>`).join('') + '</tbody>' +
-    `<caption style="caption-side:bottom;text-align:left"><div class="legende-recap"><b>Fin de saison</b> : planifié comparé à l'objectif annuel (manque ou surplus ; au-delà du plafond de ${R.plafondHS}h signalé en rouge). <b>Heures en + / en −</b> : écart de chaque semaine à sa base (35h ou 40h). <b>Solde</b> = heures en + − heures en − − récupération. <b>Au-delà de ${R.legale}h / ${R.maxSem}h / ${R.maxJour}h par jour</b> : heures de travail effectif au-delà de ces seuils (règles RH).</div></caption>`;
+    `<caption style="caption-side:bottom;text-align:left"><div class="legende-recap"><b>Planifié</b> : le réel pour les semaines pointées, sinon le prévisionnel. <b>Réel − prévu</b> : écart cumulé sur les semaines pointées. <b>Fin de saison</b> : planifié comparé à l'objectif annuel (manque ou surplus ; au-delà du plafond de ${R.plafondHS}h signalé en rouge). <b>Heures en + / en −</b> : écart de chaque semaine à sa base (35h ou 40h). <b>Solde</b> = heures en + − heures en − − récupération. <b>Au-delà de ${R.legale}h / ${R.maxSem}h / ${R.maxJour}h par jour</b> : heures de travail effectif au-delà de ces seuils (règles RH).</div></caption>`;
   $('#recapCards').innerHTML = st.map(({ e, s }) => `<div class="rcard"><div class="top"><div><b>${esc(e.prenom)} ${esc(e.nom)}</b><div class="hint" style="font-size:12px">${esc(e.station)} · ${s.weeks} sem.</div></div><div>${projectionHtml(s)}</div></div>
-    <div class="lines"><span>Planifié <b>${fmtH(s.tot)}</b> / ${fmtH(s.objectif)}</span><span>Solde ${ecartHtml(s.solde)}</span>
+    <div class="lines"><span>Planifié <b>${fmtH(s.tot)}</b> / ${fmtH(s.objectif)}</span><span>Pointé <b>${s.semReel ? s.semReel + ' sem.' : '—'}</b> ${s.semReel ? ecartHtml(s.ecartRP) : ''}</span><span>Solde ${ecartHtml(s.solde)}</span>
       <span>Heures en + <b style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</b></span><span>Heures en − <b style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</b></span>
       <span>Au-delà de ${R.legale}h <b>${s.au35 ? fmtH(s.au35) : '—'}</b></span><span>Au-delà de ${R.maxSem}h <b style="${s.au48 ? 'color:var(--neg)' : ''}">${s.au48 ? fmtH(s.au48) : '—'}</b></span>
       <span>Au-delà de ${R.maxJour}h/j <b style="${s.au10 ? 'color:var(--neg)' : ''}">${s.au10 ? fmtH(s.au10) : '—'}</b></span><span>Nuit <b>${s.nuit ? fmtH(s.nuit) : '—'}</b></span>
@@ -1036,7 +1115,7 @@ function renderRecap() {
   h += '</tr></thead><tbody>';
   for (const { e, s } of st) {
     h += `<tr><td class="nm">${esc(e.prenom)} ${esc(e.nom[0])}.</td>`;
-    s.cells.forEach((d, i) => { const w = S.start + i, cur = w === state.week ? 'cur' : '', tt = `S${isoWeek(weekDate(w))} (${fd(weekDate(w))}) · base ${fmtH(baseSemaine(w))}`; h += d == null ? `<td class="c np ${cur}" data-w="${w}" title="${tt} : pas encore planifié">·</td>` : `<td class="c ${cur}" data-w="${w}" style="${cellStyle(d)}" title="${tt} : ${d === 0 ? 'pile la base' : sgn(d)}">${d === 0 ? '0' : (d > 0 ? '+' : '') + Math.round(d / 60)}</td>`; });
+    s.cells.forEach((d, i) => { const w = S.start + i, cur = w === state.week ? 'cur' : '', tt = `S${isoWeek(weekDate(w))} (${fd(weekDate(w))}) · base ${fmtH(baseSemaine(w))}`; const rr = s.cellsR[i] ? 'r' : ''; h += d == null ? `<td class="c np ${cur}" data-w="${w}" title="${tt} : pas encore planifié">·</td>` : `<td class="c ${cur} ${rr}" data-w="${w}" style="${cellStyle(d)}" title="${tt} : ${d === 0 ? 'pile la base' : sgn(d)}${rr ? ' · réel (pointé)' : ' · prévisionnel'}">${d === 0 ? '0' : (d > 0 ? '+' : '') + Math.round(d / 60)}</td>`; });
     h += '</tr>';
   }
   $('#heatmap').innerHTML = h + '</tbody></table>';
@@ -1140,7 +1219,7 @@ $('#v-reglages').addEventListener('change', ev => {
 $('#v-reglages').addEventListener('click', ev => {
   const t = ev.target;
   if (t.dataset.delEmp) { if (!confirm('Supprimer ce salarié ?\nSes créneaux restent dans le Google Sheet mais ne seront plus affichés.\nAstuce : décocher « Actif » suffit pour le retirer du planning.')) return; state.emps = state.emps.filter(e => e.id !== t.dataset.delEmp); }
-  else if (t.dataset.delType) { if (Object.values(state.slots).some(a => a.some(z => z.type === t.dataset.delType))) return toast('Ce type est utilisé dans le planning : impossible de le supprimer.'); state.types = state.types.filter(x => x.id !== t.dataset.delType); }
+  else if (t.dataset.delType) { if ([...Object.values(state.slotsV.prevu), ...Object.values(state.slotsV.reel)].some(a => a.some(z => z.type === t.dataset.delType))) return toast('Ce type est utilisé dans le planning : impossible de le supprimer.'); state.types = state.types.filter(x => x.id !== t.dataset.delType); }
   else if (t.dataset.delFer) state.feries = state.feries.filter(x => x.d !== t.dataset.delFer);
   else if (t.dataset.delSt) { const s = state.stations[+t.dataset.delSt]; if (state.emps.some(e => e.station === s)) return toast('Déplacez d\'abord les salariés de cette station.'); state.stations.splice(+t.dataset.delSt, 1); }
   else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '' });
@@ -1268,7 +1347,8 @@ function ouvrirModele() {
         <button class="btn sm" id="mSem">Cette semaine</button><button class="btn sm" id="mSaison">Jusqu'à fin de saison</button></div>
       <label class="l">Salariés <a href="#" id="mTous" style="font-size:12px">tout cocher</a></label>
       <div class="emps">${list.map(e => `<label><input type="checkbox" data-me="${esc(e.id)}" ${choisis.has(e.id) ? 'checked' : ''}>${esc(e.prenom)} ${esc(e.nom)}</label>`).join('') || '<span class="hint">Aucun salarié</span>'}</div>
-      <label style="display:flex;gap:6px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" id="mRemp"> Remplacer ce qui existe déjà sur ces jours</label>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px"><label style="display:flex;gap:6px;align-items:center">Enregistrer dans le <select id="mVer"><option value="prevu">Prévisionnel</option><option value="reel" ${state.mode === 'reel' ? 'selected' : ''}>Réel</option></select></label>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mRemp"> Remplacer ce qui existe déjà sur ces jours</label></div>
       <div class="apercu" id="mApercu"></div>
     </div>
     <div class="mf"><button class="btn" id="mAnnuler">Annuler</button><button class="btn primary" id="mOk">Appliquer</button></div>`;
@@ -1308,7 +1388,7 @@ function ouvrirModele() {
     if (!v.sal.length) return toast('Cochez au moins un salarié.');
     if ((v.au - v.du) / 864e5 > 400) return toast('Période trop longue (plus d\'un an).');
     if ($('#mSave').checked) { v.m.jours = v.jours.slice(); saveSettings(); }
-    const r = appliquerModele(v.m, v.sal, v.du, v.au, v.remp, v.jours);
+    const r = dansVersion($('#mVer').value, () => appliquerModele(v.m, v.sal, v.du, v.au, v.remp, v.jours));
     fermerModele(); renderAll();
     toast(resumeCompteur(r));
   };
@@ -1463,8 +1543,10 @@ function analyserPdf(pages) {
     lignes.forEach((l, ri) => jours.forEach((j, ci) => { const dt = new Date(l.an, l.mois, j.d); if (dt.getMonth() === l.mois) ajout(nom, iso(dt), g.get(ri, ci)); }));
   }
   const lignes = Object.values(parNom);
+  const tout = pages.flat().map(it => it.s).join(' ');
+  const version = /pr[ée]visionnel/i.test(tout) ? 'prevu' : /r[ée]el/i.test(tout) ? 'reel' : null;
   if (!lignes.length) throw new Error('Mise en page non reconnue. Ce lecteur attend un PDF RHéa avec du texte (vue semaine ou récapitulatif annuel). Un PDF scanné ou une photo ne contient pas de texte lisible.');
-  return { lignes };
+  return { lignes, version };
 }
 
 /* Fenêtre d'import */
@@ -1484,20 +1566,22 @@ function ouvrirImport() {
       <label class="l">Fichier à importer</label>
       <input type="file" id="iFile" accept=".csv,.txt,.pdf,text/csv,application/pdf">
       <div id="iApercu" style="margin-top:8px"></div>
-      <label style="display:flex;gap:6px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" id="iRemp"> Remplacer ce qui existe déjà (sinon, seuls les <b>&nbsp;jours vides&nbsp;</b> sont remplis)</label>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px"><label style="display:flex;gap:6px;align-items:center">Importer dans le <select id="iVer"><option value="prevu">Prévisionnel</option><option value="reel" ${state.mode === 'reel' ? 'selected' : ''}>Réel</option></select></label><span class="hint" id="iVerNote"></span>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="iRemp"> Remplacer ce qui existe déjà (sinon, seuls les <b>&nbsp;jours vides&nbsp;</b> sont remplis)</label></div>
     </div>
     <div class="mf"><span class="hint" id="iRes"></span><span><button class="btn" id="iAnnuler">Annuler</button> <button class="btn primary" id="iOk" disabled>Importer</button></span></div>`;
   $('#modal').classList.add('on');
   importData = null;
   $('#iX').onclick = $('#iAnnuler').onclick = fermerModele;
   $('#iModele').onclick = telechargerCsvModele;
-  $('#iRemp').onchange = afficherImport;
+  $('#iRemp').onchange = afficherImport; $('#iVer').onchange = afficherImport;
   $('#iFile').onchange = async ev => {
     const f = ev.target.files[0]; if (!f) return;
     $('#iApercu').innerHTML = '<span class="hint">Lecture du fichier…</span>'; $('#iOk').disabled = true;
     try {
       importData = /\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? analyserPdf(await lirePdf(f)) : analyserCsv(lireCsv(await f.text()));
       importData.lignes.forEach(L => { const e = trouverSalarie(L.nom); L.cible = e ? e.id : '__creer'; });
+      if (importData.version) { $('#iVer').value = importData.version; $('#iVerNote').textContent = '(le PDF indique « ' + (importData.version === 'reel' ? 'réel' : 'prévisionnel') + ' »)'; } else $('#iVerNote').textContent = '';
       afficherImport();
     } catch (e) { importData = null; $('#iApercu').innerHTML = `<div class="apercu" style="color:var(--neg)">⚠ ${esc(e.message || e)}</div>`; }
   };
@@ -1514,7 +1598,7 @@ function ouvrirImport() {
       for (const [d, v] of Object.entries(L.jours)) {
         if (!v || v.startsWith('?')) continue;
         const di = dayIndex(parseIso(d)), w = Math.floor(di / 7);
-        poserJour(L.cible, w, di - w * 7, v, remp, cpt);
+        dansVersion($('#iVer').value, () => poserJour(L.cible, w, di - w * 7, v, remp, cpt));
       }
     }
     if (crees) saveSettings();
@@ -1536,7 +1620,7 @@ function afficherImport() {
       const v = L.jours[d] || ''; if (!v) { h += '<td></td>'; return; }
       const lisible = !v.startsWith('?') && v.split('+').every(lireCaseModele);
       let rempli = false;
-      if (lisible && L.cible && !L.cible.startsWith('__') && !remp) { const di = dayIndex(parseIso(d)), w = Math.floor(di / 7); rempli = getSlots(w).some(s => s.emp === L.cible && Math.floor(s.start / DAY) === di - w * 7); }
+      if (lisible && L.cible && !L.cible.startsWith('__') && !remp) { const di = dayIndex(parseIso(d)), w = Math.floor(di / 7); rempli = (storeDe($('#iVer').value)[w] || []).some(s => s.emp === L.cible && Math.floor(s.start / DAY) === di - w * 7); }
       if (L.cible === '__ignorer') { h += `<td class="plein">${esc(v)}</td>`; return; }
       if (!lisible) bad++; else if (rempli) plein++; else ok++;
       h += `<td class="${!lisible ? 'bad' : rempli ? 'plein' : 'ok'}" title="${!lisible ? 'Illisible : ignoré' : rempli ? 'Jour déjà rempli : gardé' : 'Sera importé'}">${esc(v.replace(/^\?/, ''))}</td>`;
@@ -1579,6 +1663,7 @@ $('#next').onclick = () => { state.week++; renderAll(); };
 $('#today').onclick = () => { state.week = TODAY.w; state.mday = TODAY.d; renderAll(); };
 $('#stationSel').onchange = ev => { state.station = ev.target.value; renderAll(); };
 $('#copyPrev').onclick = () => {
+  if (state.mode === 'comp') return toast('Vue Comparaison (lecture seule) : choisissez « Réel » ou « Prévisionnel ».');
   if (!confirm('Remplacer cette semaine par une copie de la semaine précédente ?')) return;
   const w = state.week; getSlots(w).forEach(z => { pending.ups.delete(z.id); pending.dels.add(z.id); });
   state.slots[w] = getSlots(w - 1).map(z => ({ ...z, id: newId() })); state.slots[w].forEach(markSlot);

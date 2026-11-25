@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1XxH6M-GFu4T4znMcR0zhkvmvTTeoTQzN6MFwVMWgBFA',
   // À augmenter à chaque changement de la structure ci-dessous :
   // le programme ajoute alors lui-même les onglets / colonnes manquants.
-  SCHEMA_VERSION: 5,
+  SCHEMA_VERSION: 6,
 };
 
 /**
@@ -84,6 +84,7 @@ const SCHEMA = [
       { key: 'Début', type: 'datetime' }, { key: 'Fin', type: 'datetime' },
       { key: 'Pause (min, vide = auto)' },
       { key: 'Modifié le', type: 'datetime' }, { key: 'Modifié par' },
+      { key: 'Version' }, // v6 : « Prévisionnel » (vide = prévisionnel) ou « Réel »
     ],
   },
   {
