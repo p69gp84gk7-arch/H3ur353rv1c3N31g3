@@ -55,6 +55,7 @@ function chargerDonnees() {
     poste: String(r['Poste']), nuit: vrai_(r['Travailleur de nuit']), actif: vrai_(r['Actif']),
     contrat: /^sais/i.test(String(r['Contrat'] || '')) ? 'saisonnier' : 'permanent',
     embauche: r["Date d'embauche"] instanceof Date ? versTexte_(r["Date d'embauche"], 'dd/MM/yyyy') : '',
+    objectif: r['Objectif annuel (h)'] === '' || r['Objectif annuel (h)'] == null || isNaN(Number(r['Objectif annuel (h)'])) ? null : Number(r['Objectif annuel (h)']),
   }));
   const stations = lireTable_('Stations').sort((a, b) => (Number(a['Ordre']) || 0) - (Number(b['Ordre']) || 0)).map(r => String(r['Nom']));
   const types = lireTable_('Types').map(r => ({
@@ -76,8 +77,13 @@ function chargerDonnees() {
     debut: versTexte_(r['Début'], "yyyy-MM-dd'T'HH:mm"), fin: versTexte_(r['Fin'], "yyyy-MM-dd'T'HH:mm"),
     pause: r[COL_PAUSE] === '' || r[COL_PAUSE] === null ? null : Number(r[COL_PAUSE]),
   }));
+  const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const modeles = lireTable_('Modèles').filter(r => r['ID'] !== '').map(r => ({
+    id: String(r['ID']), nom: String(r['Nom']), couleur: String(r['Couleur']) || '#64748b',
+    jours: JOURS.map(j => (r[j] instanceof Date ? versTexte_(r[j], 'HH:mm') : String(r[j] == null ? '' : r[j]).trim())),
+  }));
   return {
-    emps, stations, types, rules, feries, creneaux,
+    emps, stations, types, rules, feries, creneaux, modeles,
     utilisateur: utilisateur_(), sheetUrl: ss.getUrl(), aujourdhui: versTexte_(new Date(), 'yyyy-MM-dd'),
   };
 }
@@ -129,9 +135,15 @@ function enregistrerReglages(r) {
       'Travailleur de nuit': !!e.nuit, 'Actif': !!e.actif,
       'Contrat': e.contrat === 'saisonnier' ? 'Saisonnier' : 'Permanent',
       "Date d'embauche": e.contrat === 'saisonnier' && e.embauche ? texteVersDate_(e.embauche) : '',
+      'Objectif annuel (h)': e.objectif === null || e.objectif === undefined || e.objectif === '' ? '' : Number(e.objectif),
       'Créé le': anciens[String(e.id)] || maintenant, 'Modifié le': maintenant,
     })));
     ecrireTable_('Stations', (r.stations || []).map((s, i) => ({ 'Nom': s, 'Ordre': i + 1 })));
+    if (r.modeles) ecrireTable_('Modèles', r.modeles.map(m => {
+      const o = { 'ID': m.id, 'Nom': m.nom, 'Couleur': m.couleur };
+      ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach((j, i) => { o[j] = String((m.jours || [])[i] || ''); });
+      return o;
+    }));
     ecrireTable_('Types', (r.types || []).map(t => ({
       'ID': t.id, 'Nom': t.nom, 'Couleur': t.couleur, 'Saisie': t.mode === 'jour' ? 'Journée entière' : 'Horaires',
       'Compte dans les 35h': !!t.compteur, 'Forfait par jour (h)': Number(t.forfait) || 0,

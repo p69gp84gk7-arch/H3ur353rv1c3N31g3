@@ -4,7 +4,7 @@
  * (CONFIG.SCHEMA_VERSION augmenté), les onglets et colonnes manquants sont créés.
  */
 
-const FORMATS = { date: 'dd/mm/yyyy', datetime: 'dd/mm/yyyy hh:mm' };
+const FORMATS = { date: 'dd/mm/yyyy', datetime: 'dd/mm/yyyy hh:mm', texte: '@' };
 
 /** Convertit 'jj/mm/aaaa' en vraie date pour le Sheet. */
 function texteVersDate_(v) {
@@ -70,6 +70,7 @@ function mettreAJourBase() {
   try {
     const ss = ouvrirBase_();
     const changements = [];
+    const avant = Number(PropertiesService.getScriptProperties().getProperty('SCHEMA_VERSION')) || 0;
 
     SCHEMA.forEach(def => {
       let sh = ss.getSheetByName(def.name);
@@ -105,6 +106,8 @@ function mettreAJourBase() {
       }
     });
 
+    if (avant > 0 && avant < CONFIG.SCHEMA_VERSION) migrer_(ss, avant, changements);
+
     // L'onglet vide créé avec le fichier (« Feuille 1 » / « Sheet1 ») est retiré s'il est vide
     ['Feuille 1', 'Feuille1', 'Sheet1'].forEach(n => {
       const sh = ss.getSheetByName(n);
@@ -117,6 +120,43 @@ function mettreAJourBase() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Corrections de données lors d'un changement de version. Ajoute ou corrige, ne supprime jamais. */
+function migrer_(ss, avant, changements) {
+  if (avant < 3) {
+    const def = nom => SCHEMA.filter(d => d.name === nom)[0];
+    const objet = (d, ligne) => { const o = {}; d.columns.forEach((c, i) => { o[c.key] = texteVersDate_(ligne[i]); }); return o; };
+    ajouterSiAbsent_(ss, 'Types', 'ID', def('Types').defaults.map(l => objet(def('Types'), l)), changements);           // type SOLI
+    ajouterSiAbsent_(ss, 'Règles', 'Clé', def('Règles').defaults.map(l => objet(def('Règles'), l)), changements);     // objectif annuel
+    ajouterSiAbsent_(ss, 'Fériés', 'Date', def('Fériés').defaults.map(l => objet(def('Fériés'), l)), changements);    // fériés de juin à nov. 2026
+    // Saison = année de contrat (01/06 → 31/05), seulement si les anciennes dates par défaut sont encore là
+    const sh = ss.getSheetByName('Règles');
+    if (sh && sh.getLastRow() > 1) {
+      const data = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
+      data.forEach((r, i) => {
+        const v = cleTexte_(r[1]);
+        if (r[0] === 'saisonDebut' && v === '2026-11-23') { sh.getRange(i + 2, 2).setValue(new Date(2026, 5, 1)); changements.push('saison : début au 01/06/2026'); }
+        if (r[0] === 'saisonFin' && v === '2027-11-21') { sh.getRange(i + 2, 2).setValue(new Date(2027, 4, 31)); changements.push('saison : fin au 31/05/2027'); }
+      });
+    }
+  }
+}
+
+function cleTexte_(v) { return v instanceof Date ? Utilities.formatDate(v, tz_(), 'yyyy-MM-dd') : String(v); }
+
+/** Ajoute à un onglet les lignes dont la clé n'existe pas encore. */
+function ajouterSiAbsent_(ss, nomOnglet, colonneCle, lignes, changements) {
+  const sh = ss.getSheetByName(nomOnglet);
+  if (!sh) return;
+  const tete = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const iCle = tete.indexOf(colonneCle), n = sh.getLastRow();
+  if (iCle === -1) return;
+  const cles = n > 1 ? sh.getRange(2, iCle + 1, n - 1, 1).getValues().map(r => cleTexte_(r[0])) : [];
+  const nouvelles = lignes.filter(o => cles.indexOf(cleTexte_(o[colonneCle])) === -1);
+  if (!nouvelles.length) return;
+  sh.getRange(n + 1, 1, nouvelles.length, tete.length).setValues(nouvelles.map(o => tete.map(h => (o[h] === undefined ? '' : o[h]))));
+  changements.push(nouvelles.length + ' ligne(s) ajoutée(s) dans « ' + nomOnglet + ' »');
 }
 
 function journaliser_(action, details) {

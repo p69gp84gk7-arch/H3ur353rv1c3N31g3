@@ -172,6 +172,25 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .pill.ok{background:var(--okbg);color:var(--ok)}
 .tabs-list{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .tabs-list span{background:#eef2f7;border-radius:6px;padding:3px 8px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:55;display:none;align-items:center;justify-content:center;padding:12px}
+.modal.on{display:flex}
+.mbox{background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.3);width:min(560px,100%);max-height:calc(100vh - 24px);display:flex;flex-direction:column;overflow:hidden}
+.mbox .mh{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.mbox .mb{padding:12px 16px;overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
+.mbox .mf{padding:10px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.mbox label.l{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.mbox select,.mbox input[type=text]{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--ink)}
+.mbox .dates{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mbox .dates input{width:130px;text-align:center}
+.mbox .emps{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px}
+.mbox .emps label{display:flex;gap:6px;align-items:center;font-size:13px}
+.mbox .apercu{background:#f6f7f9;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:12px}
+.mbox .jrs{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:6px}
+.mbox .jrs div{font-size:11px;text-align:center;border-radius:5px;padding:4px 2px;background:#eef2f7}
+.mbox .jrs div b{display:block;font-size:10px;color:var(--muted)}
+.mbox .jrs div[style*="background"] b{color:rgba(255,255,255,.85)}
+.modtab input.j{width:96px;text-align:center}
+@media (max-width:760px){.modal{align-items:flex-end;padding:0}.mbox{border-radius:16px 16px 0 0;max-height:90vh;width:100%}.mbox .emps{grid-template-columns:1fr}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
 .toast.on{opacity:1}
 
@@ -244,6 +263,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
       <div class="chips desk-only" id="stationChips"></div>
       <select class="btn mob-only" id="stationSel" style="width:100%"></select>
       <div class="spacer desk-only"></div>
+      <button class="btn" id="openModele">📅 Appliquer un modèle</button>
       <button class="btn desk-only" id="copyPrev">Copier la semaine précédente</button>
     </div>
     <div class="mdays mob-only" id="mdays" style="display:none"></div>
@@ -308,6 +328,12 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
         <div id="seasonForm"></div>
       </div>
       <div class="card wide">
+        <h3>Modèles de semaine</h3>
+        <div class="sub">Pour chaque jour : un horaire (ex. <b>08:00-18:00</b>, la pause repas est déduite automatiquement), <b>RH</b> pour un repos, un code (<b>CP</b>, <b>JF</b>, <b>SOLI</b>, <b>REC</b>, <b>MAL</b>), ou vide pour ne rien poser. Utilisés par le bouton « 📅 Appliquer un modèle » du planning.</div>
+        <div style="overflow-x:auto"><table class="t modtab" id="modTable"></table></div>
+        <button class="btn" id="addModele" style="margin-top:10px">+ Ajouter un modèle</button>
+      </div>
+      <div class="card wide">
         <h3>Jours fériés</h3>
         <div class="sub">Par défaut, un jour férié est <b>travaillé</b> (saison d'hiver) : les heures faites ce jour-là sont comptées à part pour la paie. Cochez « Chômé » pour qu'il soit posé automatiquement pour tout le service (forfait 7h).</div>
         <div style="overflow-x:auto"><table class="t" id="ferTable"></table></div>
@@ -324,6 +350,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 </main>
 
 <div class="pop" id="pop"></div>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -343,7 +370,7 @@ const mq = matchMedia('(max-width: 760px)');
 const isMob = () => mq.matches;
 const DEFAULT_RULES = { legale: 35, maxSem: 48, maxMoy: 44, moyN: 12, maxJour: 10, amplitude: 13,
   reposJour: 11, reposHebdo: 35, pauseAuto: 60, pauseSeuil: 6,
-  nuitDebut: 21, nuitFin: 6, nuitMaxPoste: 8, nuitMoy: 40, pasGlisser: 30 };
+  nuitDebut: 21, nuitFin: 6, nuitMaxPoste: 8, nuitMoy: 40, pasGlisser: 30, objectifAnnuel: 1607 };
 const DEFAULT_TYPES = {
   travail_jour: { id:'travail_jour', nom:'Travail', couleur:'#2f6fdb', mode:'heures', compteur:true, effectif:true, forfait:0, deduit:false },
   travail_nuit: { id:'travail_nuit', nom:'Travail de nuit (auto)', couleur:'#33287f', mode:'heures', compteur:true, effectif:true, forfait:0, deduit:false },
@@ -351,7 +378,7 @@ const DEFAULT_TYPES = {
 const state = {
   week: 0, mday: 0, station: 'Toutes', tool: 'travail_jour', sel: null, step: 30, slots: {},
   stations: [], rules: { ...DEFAULT_RULES }, season: { start: 0, end: 51 },
-  feries: [], types: [DEFAULT_TYPES.travail_jour, DEFAULT_TYPES.travail_nuit], emps: [], sheetUrl: '', user: '',
+  feries: [], types: [DEFAULT_TYPES.travail_jour, DEFAULT_TYPES.travail_nuit], emps: [], modeles: [], sheetUrl: '', user: '',
 };
 function newId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
@@ -448,7 +475,7 @@ function onData(d) {
   state.stations = d.stations.length ? d.stations : ['Superbagnères', 'Le Mourtis', "Bourg d'Oueil"];
   state.types = d.types.slice();
   ['travail_nuit', 'travail_jour'].forEach(id => { if (!state.types.some(t => t.id === id)) state.types.unshift({ ...DEFAULT_TYPES[id] }); });
-  state.emps = d.emps; state.feries = d.feries;
+  state.emps = d.emps; state.feries = d.feries; state.modeles = d.modeles || [];
   state.rules = { ...DEFAULT_RULES };
   for (const k in d.rules) {
     const v = d.rules[k], n = Number(v);
@@ -474,7 +501,8 @@ function onData(d) {
 /* Enregistrement des créneaux : regroupé et envoyé ~0,7 s après la dernière modification */
 const pending = { ups: new Map(), dels: new Set() };
 let saveTimer = null, saving = false;
-function markSlot(s) { pending.dels.delete(s.id); pending.ups.set(s.id, { s, w: state.week }); scheduleSave(); }
+function markSlot(s, w = state.week) { pending.dels.delete(s.id); pending.ups.set(s.id, { s, w }); scheduleSave(); }
+function removeSlotW(s, w) { state.slots[w] = getSlots(w).filter(x => x !== s); pending.ups.delete(s.id); pending.dels.add(s.id); scheduleSave(); }
 function removeSlot(s) { state.slots[state.week] = getSlots(state.week).filter(x => x !== s); pending.ups.delete(s.id); pending.dels.add(s.id); scheduleSave(); }
 function scheduleSave(delay = 700) { setSync('pending', '… Enregistrement'); clearTimeout(saveTimer); saveTimer = setTimeout(flushSlots, delay); }
 function flushSlots() {
@@ -521,7 +549,7 @@ function flushSettings() {
       settingsTimer = setTimeout(flushSettings, 5000);
     })
     .enregistrerReglages({ emps: state.emps, stations: state.stations, types: state.types,
-      rules: { ...state.rules, pasGlisser: state.step }, feries: state.feries });
+      rules: { ...state.rules, pasGlisser: state.step }, feries: state.feries, modeles: state.modeles });
 }
 function waitThenReload() { if (saving || pending.ups.size || pending.dels.size) return setTimeout(waitThenReload, 300); init(); }
 window.addEventListener('beforeunload', ev => {
@@ -909,7 +937,8 @@ function seasonStats(e) {
     const a = analyze(e, w); weeks++; tot += a.counter; night += a.night; alerts += a.alerts.length; recup += a.recup; fer += a.ferieWorked;
     if (a.ecart < 0) neg -= a.ecart; else pos += a.ecart; cells.push(a.ecart);
   }
-  return { weeks, tot, neg, pos, recup, fer, solde: pos - neg - recup, night, alerts, cells, avg12: avgN(effOf, e, Math.min(state.week, S.end), state.rules.moyN) };
+  const objectif = (emp(e) && emp(e).objectif != null ? emp(e).objectif : state.rules.objectifAnnuel) * 60;
+  return { weeks, tot, neg, pos, recup, fer, solde: pos - neg - recup, night, alerts, cells, objectif, reste: objectif - tot, avg12: avgN(effOf, e, Math.min(state.week, S.end), state.rules.moyN) };
 }
 function cellStyle(d) {
   if (d === 0) return 'background:#dcfce7;color:#166534';
@@ -923,14 +952,14 @@ function renderRecap() {
   stationChips($('#stationChips2'));
   const st = visibleEmps().map(e => ({ e, s: seasonStats(e.id) })), sum = k => st.reduce((t, x) => t + x.s[k], 0);
   $('#kpis').innerHTML = `
-    <div class="kpi"><div class="k">Heures comptées (saison)</div><div class="v">${fmtH(sum('tot'))}</div></div>
+    <div class="kpi"><div class="k">Heures planifiées / objectif annuel</div><div class="v">${fmtH(sum('tot'))} <span style="font-size:14px;color:var(--muted)">/ ${fmtH(sum('objectif'))}</span></div></div>
     <div class="kpi"><div class="k">Dépassements cumulés</div><div class="v pos">+${fmtH(sum('pos'))}</div></div>
     <div class="kpi"><div class="k">Heures manquantes cumulées</div><div class="v neg">${fmtH(-sum('neg'))}</div></div>
     <div class="kpi"><div class="k">Alertes RH</div><div class="v ${sum('alerts') ? 'neg' : ''}">${sum('alerts')}</div></div>`;
-  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th class="n">Semaines</th><th class="n">Heures comptées</th><th class="n">Manquantes</th><th class="n">Dépassements</th><th class="n">Récupérées</th><th class="n">Solde</th><th class="n">Moy. ${state.rules.moyN} sem.</th><th class="n">Nuit</th><th class="n">Fériés travaillés</th><th class="n">Alertes</th></tr></thead><tbody>` +
-    st.map(({ e, s }) => `<tr><td><b>${esc(e.prenom)} ${esc(e.nom)}</b></td><td>${esc(e.station)}</td><td class="n">${s.weeks}</td><td class="n">${fmtH(s.tot)}</td><td class="n" style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</td><td class="n" style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</td><td class="n">${s.recup ? fmtH(s.recup) : '—'}</td><td class="n">${ecartHtml(s.solde)}</td><td class="n">${fmtH(s.avg12)}</td><td class="n">${fmtH(s.night)}</td><td class="n">${s.fer ? fmtH(s.fer) : '—'}</td><td class="n" style="${s.alerts ? 'color:var(--neg);font-weight:700' : ''}">${s.alerts || '—'}</td></tr>`).join('') + '</tbody>';
+  $('#recapTable').innerHTML = `<thead><tr><th>Salarié</th><th>Station</th><th class="n">Semaines</th><th class="n">Heures comptées</th><th class="n">Objectif annuel</th><th class="n">Reste à planifier</th><th class="n">Manquantes</th><th class="n">Dépassements</th><th class="n">Récupérées</th><th class="n">Solde</th><th class="n">Moy. ${state.rules.moyN} sem.</th><th class="n">Nuit</th><th class="n">Fériés travaillés</th><th class="n">Alertes</th></tr></thead><tbody>` +
+    st.map(({ e, s }) => `<tr><td><b>${esc(e.prenom)} ${esc(e.nom)}</b></td><td>${esc(e.station)}</td><td class="n">${s.weeks}</td><td class="n">${fmtH(s.tot)}</td><td class="n">${fmtH(s.objectif)}</td><td class="n" style="${s.reste < 0 ? 'color:var(--pos);font-weight:700' : ''}" title="${s.reste < 0 ? 'Objectif annuel dépassé' : ''}">${s.reste < 0 ? '+' + fmtH(-s.reste) + ' au-delà' : fmtH(s.reste)}</td><td class="n" style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</td><td class="n" style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</td><td class="n">${s.recup ? fmtH(s.recup) : '—'}</td><td class="n">${ecartHtml(s.solde)}</td><td class="n">${fmtH(s.avg12)}</td><td class="n">${fmtH(s.night)}</td><td class="n">${s.fer ? fmtH(s.fer) : '—'}</td><td class="n" style="${s.alerts ? 'color:var(--neg);font-weight:700' : ''}">${s.alerts || '—'}</td></tr>`).join('') + '</tbody>';
   $('#recapCards').innerHTML = st.map(({ e, s }) => `<div class="rcard"><div class="top"><div><b>${esc(e.prenom)} ${esc(e.nom)}</b><div class="hint" style="font-size:12px">${esc(e.station)} · ${s.weeks} sem.</div></div><div>Solde ${ecartHtml(s.solde)}</div></div>
-    <div class="lines"><span>Comptées <b>${fmtH(s.tot)}</b></span><span>Manquantes <b style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</b></span><span>Dépassements <b style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</b></span><span>Récupérées <b>${s.recup ? fmtH(s.recup) : '—'}</b></span><span>Nuit <b>${fmtH(s.night)}</b></span><span>Alertes <b style="${s.alerts ? 'color:var(--neg)' : ''}">${s.alerts || '—'}</b></span></div></div>`).join('');
+    <div class="lines"><span>Comptées <b>${fmtH(s.tot)}</b> / ${fmtH(s.objectif)}</span><span>Reste à planifier <b>${s.reste < 0 ? '+' + fmtH(-s.reste) + ' au-delà' : fmtH(s.reste)}</b></span><span>Manquantes <b style="color:var(--neg)">${s.neg ? fmtH(-s.neg) : '—'}</b></span><span>Dépassements <b style="color:var(--pos)">${s.pos ? '+' + fmtH(s.pos) : '—'}</b></span><span>Récupérées <b>${s.recup ? fmtH(s.recup) : '—'}</b></span><span>Nuit <b>${fmtH(s.night)}</b></span><span>Alertes <b style="${s.alerts ? 'color:var(--neg)' : ''}">${s.alerts || '—'}</b></span></div></div>`).join('');
   let h = '<table><thead><tr><th></th>';
   for (let w = S.start; w <= S.end; w++) h += `<th class="${w === state.week ? 'cur' : ''}" title="du ${fd(weekDate(w))} au ${fd(weekDate(w, 6))}">S${isoWeek(weekDate(w))}</th>`;
   h += '</tr></thead><tbody>';
@@ -944,20 +973,28 @@ function renderRecap() {
 $('#heatmap').addEventListener('click', ev => { const c = ev.target.closest('td[data-w]'); if (!c) return; state.week = +c.dataset.w; showTab('planning'); });
 
 /* ---------- RÉGLAGES ---------- */
+function renderModeles() {
+  $('#modTable').innerHTML = '<thead><tr><th>Nom</th><th>Couleur</th>' + DAYN.map(d => `<th>${d}</th>`).join('') + '<th>Total</th><th></th></tr></thead><tbody>' +
+    state.modeles.map(m => `<tr data-m="${esc(m.id)}"><td><input type="text" data-mf="nom" value="${esc(m.nom)}"></td><td><input type="color" data-mf="couleur" value="${esc(m.couleur)}"></td>` +
+      m.jours.map((v, j) => `<td><input type="text" class="j" data-mf="jour" data-j="${j}" value="${esc(v)}" placeholder="—"></td>`).join('') +
+      `<td class="n"><b>${fmtH(totalModele(m))}</b></td><td><button class="icon" data-del-mod="${esc(m.id)}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
+}
 function renderSettings() {
+  renderModeles();
   $('#sheetInfo').innerHTML = state.sheetUrl ? `<a href="${esc(state.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a> <span class="hint">· connecté : ${esc(state.user || '—')}</span>` : '';
-  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
+  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Objectif annuel (h)</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
     state.emps.map(e => `<tr data-e="${e.id}"><td><input type="text" data-f="prenom" value="${esc(e.prenom)}"></td><td><input type="text" data-f="nom" value="${esc(e.nom)}"></td>
       <td><select data-f="station">${state.stations.map(s => `<option ${s === e.station ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></td>
       <td><input type="text" data-f="poste" value="${esc(e.poste)}"></td>
       <td><select data-f="contrat"><option value="permanent" ${e.contrat !== 'saisonnier' ? 'selected' : ''}>Permanent</option><option value="saisonnier" ${e.contrat === 'saisonnier' ? 'selected' : ''}>Saisonnier</option></select></td>
       <td>${e.contrat === 'saisonnier' ? `<input type="text" class="date" data-f="embauche" placeholder="jj/mm/aaaa" value="${esc(e.embauche || '')}">` : '<span class="hint">—</span>'}</td>
+      <td><input type="number" min="0" step="1" data-f="objectif" value="${e.objectif == null ? '' : e.objectif}" placeholder="${state.rules.objectifAnnuel}" title="Vide = objectif par défaut (${state.rules.objectifAnnuel}h)"></td>
       <td style="text-align:center"><input type="checkbox" data-f="nuit" ${e.nuit ? 'checked' : ''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="actif" ${e.actif ? 'checked' : ''}></td>
       <td><button class="icon" data-del-emp="${e.id}" title="Supprimer">🗑</button></td></tr>`).join('') + '</tbody>';
   const R = state.rules, r = (k, label, u = 'h') => `<div class="rule"><span>${label}</span><span><input type="number" min="0" step="0.5" data-rule="${k}" value="${R[k]}"><span class="u">${u}</span></span></div>`;
   $('#rules').innerHTML = `
-    <div><h4>Durées de travail</h4>${r('legale', 'Durée légale par semaine')}${r('maxSem', 'Maxi sur une semaine')}${r('maxMoy', 'Maxi en moyenne')}${r('moyN', '… calculée sur', 'sem.')}${r('maxJour', 'Maxi sur une journée')}${r('amplitude', 'Amplitude maxi d\'une journée')}</div>
+    <div><h4>Durées de travail</h4>${r('legale', 'Durée légale par semaine')}${r('maxSem', 'Maxi sur une semaine')}${r('maxMoy', 'Maxi en moyenne')}${r('moyN', '… calculée sur', 'sem.')}${r('maxJour', 'Maxi sur une journée')}${r('amplitude', 'Amplitude maxi d\'une journée')}${r('objectifAnnuel', 'Objectif annuel par défaut')}</div>
     <div><h4>Repos minimum</h4>${r('reposJour', 'Repos entre 2 journées')}${r('reposHebdo', 'Repos hebdomadaire d\'affilée')}
       <h4 class="mt">Pause repas automatique</h4>${r('pauseAuto', 'Durée de la pause', 'min')}${r('pauseSeuil', 'Si le créneau dépasse')}</div>
     <div><h4>Travail de nuit</h4>${r('nuitDebut', 'La nuit commence à')}${r('nuitFin', 'La nuit finit à')}${r('nuitMaxPoste', 'Maxi par poste de nuit')}${r('nuitMoy', 'Maxi en moyenne (travailleur de nuit)')}</div>`;
@@ -986,6 +1023,16 @@ $('#v-reglages').addEventListener('change', ev => {
     if (t.value.trim() && !d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); }
     e.embauche = d ? fd(d) : '';
   }
+  else if (t.dataset.f === 'objectif') { const e = emp(t.closest('tr').dataset.e); e.objectif = t.value === '' ? null : Math.max(0, +t.value); }
+  else if (t.dataset.mf) {
+    const m = state.modeles.find(x => x.id === t.closest('tr').dataset.m);
+    if (t.dataset.mf === 'jour') {
+      const v = t.value.trim().toUpperCase().replace(/\s+/g, '').replace(/(\d{1,2})H(?!\d)/g, '$1:00').replace(/(\d)H(\d)/g, '$1:$2').replace(/–/g, '-');
+      if (v && !lireCaseModele(v)) { toast('Valeur non reconnue : écrivez par ex. 08:00-18:00, RH, CP, JF, SOLI, REC, MAL ou laissez vide.'); return renderSettings(); }
+      const lu = lireCaseModele(v);
+      m.jours[+t.dataset.j] = lu && lu.debut !== undefined ? tv(lu.debut) + '-' + tv(lu.fin) : v; // toujours au format 08:00-18:00
+    } else m[t.dataset.mf] = t.value;
+  }
   else if (t.dataset.f) { const e = emp(t.closest('tr').dataset.e); e[t.dataset.f] = t.type === 'checkbox' ? t.checked : t.value; }
   else if (t.dataset.rule) state.rules[t.dataset.rule] = +t.value;
   else if (t.dataset.tf) { const ty = type(t.closest('tr').dataset.t); ty[t.dataset.tf] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? +t.value : t.value; if (ty.mode === 'jour') ty.effectif = false; else ty.deduit = false; }
@@ -1007,11 +1054,114 @@ $('#v-reglages').addEventListener('click', ev => {
   else if (t.dataset.delSt) { const s = state.stations[+t.dataset.delSt]; if (state.emps.some(e => e.station === s)) return toast('Déplacez d\'abord les salariés de cette station.'); state.stations.splice(+t.dataset.delSt, 1); }
   else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '' });
   else if (t.id === 'addType') state.types.push({ id: 'type_' + newId().slice(1), nom: 'Nouveau type', couleur: '#0891b2', mode: 'heures', compteur: true, effectif: true, forfait: 0, deduit: false });
+  else if (t.dataset.delMod) { if (!confirm('Supprimer ce modèle ? (les créneaux déjà posés ne changent pas)')) return; state.modeles = state.modeles.filter(m => m.id !== t.dataset.delMod); }
+  else if (t.id === 'addModele') state.modeles.push({ id: 'mod_' + newId().slice(1), nom: 'Nouveau modèle', couleur: '#64748b', jours: ['08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', '08:00-17:00', 'RH', 'RH'] });
   else if (t.id === 'addFer') state.feries.push({ d: iso(new Date()), nom: 'Nouveau jour férié', chome: false });
   else if (t.id === 'addStation') state.stations.push('Nouvelle station');
   else return;
   renderAll(); saveSettings();
 });
+
+/* ---------- modèles de semaine ---------- */
+const CODES_MODELE = { RH: 'repos_hebdo', CP: 'conges', JF: 'ferie', SOLI: 'soli', REC: 'recup', MAL: 'maladie', FORM: 'formation' };
+/** Lit une case de modèle : { type, debut, fin } en minutes dans la journée, ou null si illisible. */
+function lireCaseModele(v) {
+  v = String(v || '').trim().toUpperCase();
+  if (!v) return null;
+  if (CODES_MODELE[v]) return { code: v, type: CODES_MODELE[v] };
+  const m = /^(\d{1,2})[:H](\d{2})-(\d{1,2})[:H](\d{2})$/.exec(v.replace(/\s+/g, ''));
+  if (!m) return null;
+  const a = +m[1] * 60 + +m[2]; let b = +m[3] * 60 + +m[4];
+  if (a >= DAY || b > DAY || +m[2] > 59 || +m[4] > 59) return null;
+  if (b <= a) b += DAY; // finit le lendemain (nuit)
+  return { type: 'travail_jour', debut: a, fin: b };
+}
+function totalModele(m) {
+  let t = 0;
+  m.jours.forEach(v => { const c = lireCaseModele(v); if (!c) return;
+    if (c.debut !== undefined) t += workMin({ type: 'travail_jour', start: c.debut, end: c.fin });
+    else { const ty = state.types.find(x => x.id === c.type); if (ty && ty.compteur) t += ty.forfait * 60; } });
+  return t;
+}
+/** Pose un modèle pour des salariés sur une période. Renvoie { faits, ignores, remplaces }. */
+function appliquerModele(m, salaries, du, au, remplacer) {
+  let faits = 0, ignores = 0, remplaces = 0;
+  for (let d = new Date(du); d <= au; d.setDate(d.getDate() + 1)) {
+    const di = dayIndex(d), w = Math.floor(di / 7), j = di - w * 7;
+    const c = lireCaseModele(m.jours[j]);
+    if (!c) continue;
+    const f = ferieAt(w, j);
+    for (const eId of salaries) {
+      const e = emp(eId);
+      const em = embaucheMin(e, w);
+      if (em !== null && j * DAY < em) { ignores++; continue; } // avant l'embauche
+      if (f && f.chome && c.debut !== undefined) { ignores++; continue; } // férié chômé : pas de travail
+      const cand = c.debut !== undefined
+        ? autoType({ emp: eId, type: 'travail_jour', start: j * DAY + c.debut, end: j * DAY + c.fin })
+        : { emp: eId, type: c.type, start: j * DAY, end: (j + 1) * DAY };
+      if (!state.types.some(t => t.id === cand.type) && !isWork(cand)) { ignores++; continue; }
+      const memeJour = getSlots(w).filter(s => s.emp === eId && Math.floor(s.start / DAY) === j);
+      if (remplacer) memeJour.forEach(s => { removeSlotW(s, w); remplaces++; });
+      else {
+        const lay = type(cand.type).mode;
+        if (getSlots(w).some(s => s.emp === eId && type(s.type).mode === lay && s.start < cand.end && cand.start < s.end)) { ignores++; continue; }
+      }
+      const s = { id: newId(), ...cand };
+      getSlots(w).push(s); markSlot(s, w); faits++;
+    }
+  }
+  return { faits, ignores, remplaces };
+}
+function ouvrirModele() {
+  if (!state.modeles.length) return toast('Créez d\'abord un modèle dans Réglages › Modèles de semaine.');
+  const list = visibleEmps();
+  const choisis = new Set(state.sel && list.some(e => e.id === state.sel) ? [state.sel] : []);
+  const lundi = weekDate(state.week), dimanche = weekDate(state.week, 6);
+  $('#mbox').innerHTML = `<div class="mh"><span>📅 Appliquer un modèle de semaine</span><button class="icon" id="mX">✕</button></div>
+    <div class="mb">
+      <label class="l">Modèle</label>
+      <select id="mMod" style="width:100%">${state.modeles.map(m => `<option value="${esc(m.id)}">${esc(m.nom)} — ${fmtH(totalModele(m))} / semaine</option>`).join('')}</select>
+      <div class="jrs" id="mJrs"></div>
+      <label class="l">Période (jj/mm/aaaa)</label>
+      <div class="dates">du <input type="text" id="mDu" value="${fd(lundi)}"> au <input type="text" id="mAu" value="${fd(dimanche)}">
+        <button class="btn sm" id="mSem">Cette semaine</button><button class="btn sm" id="mSaison">Jusqu'à fin de saison</button></div>
+      <label class="l">Salariés <a href="#" id="mTous" style="font-size:12px">tout cocher</a></label>
+      <div class="emps">${list.map(e => `<label><input type="checkbox" data-me="${esc(e.id)}" ${choisis.has(e.id) ? 'checked' : ''}>${esc(e.prenom)} ${esc(e.nom)}</label>`).join('') || '<span class="hint">Aucun salarié</span>'}</div>
+      <label style="display:flex;gap:6px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" id="mRemp"> Remplacer ce qui existe déjà sur ces jours</label>
+      <div class="apercu" id="mApercu"></div>
+    </div>
+    <div class="mf"><button class="btn" id="mAnnuler">Annuler</button><button class="btn primary" id="mOk">Appliquer</button></div>`;
+  $('#modal').classList.add('on');
+  const lire = () => ({ m: state.modeles.find(x => x.id === $('#mMod').value), du: parseFd($('#mDu').value), au: parseFd($('#mAu').value),
+    sal: [...document.querySelectorAll('[data-me]:checked')].map(x => x.dataset.me), remp: $('#mRemp').checked });
+  const maj = () => {
+    const v = lire();
+    $('#mJrs').innerHTML = v.m.jours.map((x, i) => `<div style="${x && x !== 'RH' ? `background:${esc(v.m.couleur)};color:#fff` : ''}"><b>${DAYN[i]}</b>${esc(x || '—')}</div>`).join('');
+    if (!v.du || !v.au || v.au < v.du) { $('#mApercu').innerHTML = '⚠ Vérifiez les dates (jj/mm/aaaa, « au » après « du »).'; return; }
+    const jours = Math.round((v.au - v.du) / 864e5) + 1;
+    $('#mApercu').innerHTML = `<b>${v.sal.length}</b> salarié(s) × <b>${jours}</b> jour(s) (${Math.ceil(jours / 7)} sem.) — ${fmtH(totalModele(v.m))} par semaine complète. `
+      + (v.remp ? 'Ce qui existe sur ces jours sera <b>remplacé</b>.' : 'Les jours déjà remplis sont <b>gardés</b>.');
+  };
+  ['mMod', 'mDu', 'mAu', 'mRemp'].forEach(id => $('#' + id).addEventListener('change', maj));
+  $('#mbox').addEventListener('change', ev => { if (ev.target.dataset.me !== undefined) maj(); });
+  $('#mSem').onclick = () => { $('#mDu').value = fd(lundi); $('#mAu').value = fd(dimanche); maj(); };
+  $('#mSaison').onclick = () => { $('#mDu').value = fd(lundi); $('#mAu').value = fd(weekDate(state.season.end, 6)); maj(); };
+  $('#mTous').onclick = ev => { ev.preventDefault(); const cs = document.querySelectorAll('[data-me]'); const tout = [...cs].every(c => c.checked); cs.forEach(c => { c.checked = !tout; }); maj(); };
+  $('#mX').onclick = $('#mAnnuler').onclick = fermerModele;
+  $('#mOk').onclick = () => {
+    const v = lire();
+    if (!v.du || !v.au || v.au < v.du) return toast('Vérifiez les dates (jj/mm/aaaa).');
+    if (!v.sal.length) return toast('Cochez au moins un salarié.');
+    if ((v.au - v.du) / 864e5 > 400) return toast('Période trop longue (plus d\'un an).');
+    const r = appliquerModele(v.m, v.sal, v.du, v.au, v.remp);
+    fermerModele(); renderAll();
+    toast(`${r.faits} créneau${r.faits > 1 ? 'x' : ''} posé${r.faits > 1 ? 's' : ''}` + (r.remplaces ? ` · ${r.remplaces} remplacé(s)` : '') + (r.ignores ? ` · ${r.ignores} ignoré(s) (déjà rempli, avant embauche ou férié chômé)` : ''));
+  };
+  maj();
+}
+function fermerModele() { $('#modal').classList.remove('on'); }
+$('#openModele').onclick = ouvrirModele;
+$('#modal').addEventListener('click', ev => { if (ev.target.id === 'modal') fermerModele(); });
 
 /* ---------- navigation ---------- */
 function renderAll() { renderTools(); renderPlanning(); renderRecap(); renderSettings(); }
