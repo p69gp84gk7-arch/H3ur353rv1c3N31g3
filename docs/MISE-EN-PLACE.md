@@ -84,3 +84,7 @@ rm ~/.clasprc.json
    manquants sont créés tout seuls. **Rien n'est jamais supprimé automatiquement.**
 
 Pour voir si le robot a réussi : onglet **Actions** du dépôt GitHub.
+L'**adresse du planning** est affichée dans le résumé du robot « Déployer vers Apps Script »
+(elle ne change pas d'une mise à jour à l'autre : mettez-la en favori sur ordinateur et smartphone).
+À la première ouverture, Google demande une autorisation : « Paramètres avancés » →
+« Accéder à Heures Service Neige » → « Autoriser ».
