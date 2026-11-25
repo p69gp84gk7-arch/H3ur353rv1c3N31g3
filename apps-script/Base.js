@@ -16,32 +16,44 @@ function texteVersDate_(v) {
 function ouvrirBase_() {
   // Le programme est rattaché au Sheet : on l'utilise directement (marche aussi à l'ouverture
   // du Sheet, où Google refuse openById tant que l'autorisation n'a pas été donnée).
-  // Chaque chef utilise la page avec son propre compte : seuls ceux qui peuvent
-  // MODIFIER le Google Sheet ont accès (donner l'accès = partager le Sheet).
-  let ss = null;
+  // Chaque chef utilise la page avec son propre compte : il faut que ce compte puisse
+  // MODIFIER le Google Sheet (donner l'accès = partager le Sheet en « Éditeur »).
+  let ss = null, raison = '';
   try {
     const actif = SpreadsheetApp.getActiveSpreadsheet();
-    ss = actif && actif.getId() === CONFIG.SHEET_ID ? actif : SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  } catch (e) { ss = null; }
-  if (!ss) throw new Error(ACCES_REFUSE_);
+    if (actif && actif.getId() === CONFIG.SHEET_ID) ss = actif;
+  } catch (e) { /* pas de Sheet actif (page web) */ }
+  if (!ss) {
+    try { ss = SpreadsheetApp.openById(CONFIG.SHEET_ID); } catch (e) { raison = e && e.message ? e.message : String(e); }
+  }
+  if (!ss) throw new Error(messageRefus_(raison));
   return ss;
 }
 
-const ACCES_REFUSE_ = "Accès refusé : votre compte Google n'a pas accès au planning. " +
-  'Demandez au chef de service de vous partager le Google Sheet « Heures Service Neige – Base de données » ' +
-  'avec le droit de modification, puis rechargez cette page.';
+/** Message de refus : dit quel compte Google est utilisé, pour repérer un mauvais compte. */
+function messageRefus_(raison) {
+  const email = utilisateur_();
+  return 'Accès refusé' + (email ? ' pour le compte Google « ' + email + ' »' : '') + '. ' +
+    'Ce compte doit pouvoir modifier le Google Sheet « Heures Service Neige – Base de données » ' +
+    '(à demander au chef de service). ' +
+    "Si plusieurs comptes Google sont connectés sur cet appareil, ouvrez la page avec le bon compte " +
+    '(par exemple dans une fenêtre de navigation privée, en vous connectant uniquement avec ce compte).' +
+    (raison ? ' [Détail technique : ' + raison + ']' : '');
+}
 
-/** Refuse les comptes qui peuvent seulement lire le Sheet (pas de modification possible). */
+/** Refuse un compte absent de la liste des éditeurs, quand Google permet de lire cette liste. */
 function verifierDroitModification_() {
   const ss = ouvrirBase_();
   const email = utilisateur_();
-  if (!email) return; // compte inconnu de Google : la protection du Sheet s'applique quand même
+  if (!email) return; // compte non communiqué par Google : les droits du Sheet s'appliquent quand même
   let autorises;
   try {
-    autorises = ss.getEditors().map(u => u.getEmail().toLowerCase());
-    if (ss.getOwner()) autorises.push(ss.getOwner().getEmail().toLowerCase());
-  } catch (e) { throw new Error(ACCES_REFUSE_); } // un simple lecteur n'a pas le droit de voir la liste
-  if (autorises.indexOf(email.toLowerCase()) === -1) throw new Error(ACCES_REFUSE_);
+    autorises = ss.getEditors().map(u => String(u.getEmail()).toLowerCase());
+    if (ss.getOwner()) autorises.push(String(ss.getOwner().getEmail()).toLowerCase());
+  } catch (e) {
+    return; // liste illisible pour ce compte : on laisse les droits du Sheet décider (un lecteur ne pourra pas enregistrer)
+  }
+  if (autorises.indexOf(email.toLowerCase()) === -1) throw new Error(messageRefus_("ce compte n'est pas dans la liste des éditeurs du Google Sheet"));
 }
 
 /** Ne fait rien si la base est déjà à jour (rapide). */

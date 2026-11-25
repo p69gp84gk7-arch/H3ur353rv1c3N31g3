@@ -439,7 +439,7 @@ function init() {
   $('#loadingMsg').textContent = 'Chargement du planning…';
   if (!hasServer) { $('#loadingMsg').textContent = 'Cette page doit être ouverte depuis son adresse Google Apps Script.'; return; }
   google.script.run.withSuccessHandler(onData).withFailureHandler(err => {
-    $('#loadingMsg').innerHTML = 'Impossible de charger les données :<br>' + esc(err && err.message || err) + '<br><br><button class="btn" onclick="init()">Réessayer</button>';
+    $('#loadingMsg').innerHTML = 'Impossible de charger les données :<br>' + esc(String(err && err.message || err).replace(/^Error:\s*/, '')) + '<br><br><button class="btn" onclick="init()">Réessayer</button>';
   }).chargerDonnees();
 }
 function onData(d) {
