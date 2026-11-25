@@ -28,28 +28,35 @@ Cette clé permet au robot d'envoyer le code. **Ne la collez jamais dans la conv
 
 1. Ouvrez **Google Cloud Shell** : https://shell.cloud.google.com
    (c'est un terminal gratuit dans le navigateur ; acceptez les conditions si on vous le demande).
-2. Copiez-collez cette ligne puis appuyez sur Entrée :
+2. Copiez-collez cette ligne puis appuyez sur Entrée
+   (**sans** `--no-localhost` : cette ancienne méthode est bloquée par Google) :
 
    ```bash
-   npx @google/clasp@2.4.2 login --no-localhost
+   npx @google/clasp@2.4.2 login
    ```
 
 3. Un lien s'affiche : ouvrez-le, choisissez votre compte Google, cliquez sur **Autoriser**.
-4. Le navigateur affiche ensuite une page d'erreur dont l'adresse commence par
-   `http://localhost:8888/?code=...`. **C'est normal.** Dans la barre d'adresse, copiez
-   **seulement le morceau entre `code=` et `&scope`** (il commence par `4/0A...` ;
-   si vous voyez `4%2F0A...`, remplacez `%2F` par `/`).
-   Collez-le dans Cloud Shell après « Enter the code from that page here », puis Entrée.
-   Le message « Logged in » apparaît.
-   *Ce code expire en quelques minutes : en cas d'erreur, relancez la commande du point 2.
-   Ne le communiquez à personne.*
-5. Affichez la clé avec :
+   **Laissez cet onglet Cloud Shell ouvert**, il attend la suite.
+4. Le navigateur affiche ensuite une page d'erreur (« Impossible d'accéder à ce site »)
+   dont l'adresse commence par `http://localhost:` suivi d'un numéro et de `/?code=...`.
+   **C'est normal.** Copiez **toute l'adresse** de la barre du navigateur.
+5. Dans Cloud Shell, ouvrez un **deuxième onglet** (bouton **+** en haut du terminal) et tapez
+   `curl "` + l'adresse collée + `"`, puis Entrée. Exemple :
+
+   ```bash
+   curl "http://localhost:12345/?code=4/0A...&scope=..."
+   ```
+
+   Revenez au premier onglet : le message « Logged in » est apparu.
+   *Cette adresse expire en quelques minutes : en cas d'erreur, recommencez au point 2.
+   Ne la communiquez à personne.*
+6. Affichez la clé avec :
 
    ```bash
    cat ~/.clasprc.json
    ```
 
-6. Sélectionnez et copiez **tout** le texte affiché (de `{` jusqu'au dernier `}`).
+7. Sélectionnez et copiez **tout** le texte affiché (de `{` jusqu'au dernier `}`).
 
 ## Étape 4 — Ranger la clé dans GitHub (coffre-fort)
 
