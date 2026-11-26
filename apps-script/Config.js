@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1XxH6M-GFu4T4znMcR0zhkvmvTTeoTQzN6MFwVMWgBFA',
   // À augmenter à chaque changement de la structure ci-dessous :
   // le programme ajoute alors lui-même les onglets / colonnes manquants.
-  SCHEMA_VERSION: 7,
+  SCHEMA_VERSION: 8,
 };
 
 /**
@@ -24,6 +24,7 @@ const SCHEMA = [
       { key: 'Créé le', type: 'datetime' }, { key: 'Modifié le', type: 'datetime' },
       { key: 'Contrat' }, { key: "Date d'embauche", type: 'date' }, // v2
       { key: 'Objectif annuel (h)' }, // v3 (vide = objectif par défaut des Règles)
+      { key: 'Date de fin de contrat', type: 'date' }, // v8 (saisonniers)
     ],
   },
   {
