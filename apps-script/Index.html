@@ -82,6 +82,7 @@ main{padding:14px 20px 60px;max-width:1700px;margin:0 auto}
 .slot.ghost{opacity:.45;cursor:not-allowed}
 .preemb{position:absolute;top:0;bottom:0;left:0;z-index:3;background:repeating-linear-gradient(135deg,rgba(100,116,139,.18) 0 5px,rgba(255,255,255,.55) 5px 10px);border-right:2px solid #64748b;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#334155;font-weight:600;pointer-events:none;white-space:nowrap;overflow:hidden}
 .nb.sais{background:#fef3c7;color:#92400e}
+.preemb.postfin{left:auto;right:0;border-right:0;border-left:2px solid #64748b}
 .slot span{padding:0 2px;overflow:hidden;text-overflow:clip;pointer-events:none;letter-spacing:-.2px}
 .slot .h-l,.slot .h-r{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:3}
 .slot .h-l{left:0}.slot .h-r{right:0}
@@ -790,10 +791,11 @@ function analyze(e, w) {
   if (days.some(D => D.poste))
     add('Poste de nuit', fmtH(Math.max(...days.filter(D => D.poste).map(D => D.work))), '≤ ' + R.nuitMaxPoste + 'h', !longNights.length, longNights.map(D => 'Nuit du ' + dayName(w, D.i) + ' : ' + fmtH(D.work)));
   if (emp(e) && emp(e).nuit) { const an = avgN(nightPostOf, e, w, R.moyN); add('Nuit : moyenne sur ' + R.moyN + ' semaines', fmtH(an), '≤ ' + R.nuitMoy + 'h', an <= R.nuitMoy * 60); }
-  const em = embaucheMin(emp(e), w);
+  const em = embaucheMin(emp(e), w), fm = finContratMin(emp(e), w);
   const avantEmb = em !== null && em >= WEEK;                       // semaine entière avant l'embauche
-  let cible = 0; // base de la semaine (35h ou 40h selon la période), au prorata de l'embauche
-  for (let d = 0; d < 7; d++) if (em === null || d * DAY >= em) cible += baseJour(w, d);
+  const apresFin = fm !== null && fm <= 0;                          // semaine entière après la fin de contrat
+  let cible = 0; // base de la semaine (35h ou 40h selon la période), au prorata de l'embauche et de la fin de contrat
+  for (let d = 0; d < 7; d++) if ((em === null || d * DAY >= em) && (fm === null || d * DAY < fm)) cible += baseJour(w, d);
   cible = Math.round(cible);
   // tous les dépassements, en heures
   const dep = {
@@ -803,7 +805,7 @@ function analyze(e, w) {
     moy: Math.max(0, avg - R.maxMoy * 60),                      // moyenne 12 semaines au-delà de 44h
     dimanche: days[6].work, nuit: night, ferie: ferieWorked,
   };
-  return { counter, eff, night, ferieWorked, absences, recup, pauses, days, checks, alerts: checks.filter(c => !c.ok), ecart: counter - cible, cible, avantEmb, dep };
+  return { counter, eff, night, ferieWorked, absences, recup, pauses, days, checks, alerts: checks.filter(c => !c.ok), ecart: counter - cible, cible, avantEmb, apresFin, horsContrat: avantEmb || apresFin, dep };
 }
 
 /* ---------- morceaux d'affichage communs ---------- */
@@ -851,6 +853,8 @@ function trackHtml(e, w, o, span) {
   for (const s of empSlots(e, w)) h += slotHtml(s, o, span);
   const em = embaucheMin(emp(e), w);
   if (em !== null && em > o) { const fin = Math.min(em, o + span); h += `<div class="preemb" style="width:${(fin - o) / span * 100}%" title="Saisonnier : embauche le ${esc(emp(e).embauche)}">${fin - o >= DAY ? 'avant embauche' : ''}</div>`; }
+  const fm = finContratMin(emp(e), w);
+  if (fm !== null && fm < o + span) { const deb = Math.max(fm, o); h += `<div class="preemb postfin" style="width:${(o + span - deb) / span * 100}%" title="Saisonnier : fin de contrat le ${esc(emp(e).fin)}">${o + span - deb >= DAY ? 'fin de contrat' : ''}</div>`; }
   if (drag && drag.kind === 'new' && drag.emp === e && drag.cand) {
     const c = drag.cand, isN = c.type === 'travail_nuit';
     const txt = drag.err ? 'chevauchement' : type(c.type).mode === 'jour' ? Math.round((c.end - c.start) / DAY) + ' j' : hc(c.start) + '–' + hc(c.end, true) + ' · ' + fmtH(workMin(c)) + (isN ? ' · nuit' : '');
@@ -931,10 +935,10 @@ function renderPlanning() {
     for (const e of es) {
       const a = analyze(e.id, w); tot += a.counter; if (a.alerts.length) nAlert++;
       h += `<div class="prow ${state.sel === e.id ? 'sel' : ''}">
-        <div class="pname" data-emp="${e.id}" title="Voir le détail des contrôles"><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb" title="Travailleur de nuit">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais" title="Saisonnier' + (e.embauche ? ', embauche le ' + esc(e.embauche) : '') + '">saisonnier</span>' : ''}</div></div>
+        <div class="pname" data-emp="${e.id}" title="Voir le détail des contrôles"><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb" title="Travailleur de nuit">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais" title="Saisonnier' + (contratTxt(e) ? ' : ' + esc(contratTxt(e)) : '') + '">saisonnier</span>' : ''}</div></div>
         ${trackHtml(e.id, w, 0, WEEK)}
         ${comp ? celluleComp(e, w) : `<div class="sc num" title="${esc((a.absences ? 'dont ' + fmtH(a.absences) + ' d\'absences au forfait. ' : '') + (a.pauses ? fmtH(a.pauses) + ' de pauses déduites.' : ''))}">${fmtH(a.counter)}</div>
-        <div class="sc">${a.avantEmb ? `<span class="hint" title="Embauche le ${esc(e.embauche)}">pas encore<br>embauché</span>` : ecartHtml(a.ecart)}${a.cible && a.cible !== state.rules.legale * 60 ? `<small class="hint" title="Objectif au prorata (embauche le ${esc(e.embauche)})">/ ${fmtH(a.cible)}</small>` : ''}</div>
+        <div class="sc">${a.avantEmb ? `<span class="hint" title="Embauche le ${esc(e.embauche)}">pas encore<br>embauché</span>` : a.apresFin ? `<span class="hint" title="Fin de contrat le ${esc(e.fin)}">contrat<br>terminé</span>` : ecartHtml(a.ecart)}${a.cible && a.cible !== state.rules.legale * 60 ? `<small class="hint" title="Objectif au prorata (${esc(contratTxt(e) || 'période')})">/ ${fmtH(a.cible)}</small>` : ''}</div>
         <div class="sc num muted">${a.night ? fmtH(a.night) : '—'}</div>`}
         <div class="sc">${ctlHtml(e, a)}</div>
       </div>`;
@@ -959,7 +963,7 @@ function detailHtml(e) {
       <table class="t"><thead><tr><th>Jour</th><th class="n">Travail</th><th class="n">Amplitude</th><th class="n">dont nuit</th></tr></thead><tbody>${dRows}</tbody></table>
     </div>
     <table class="t dep"><thead><tr><th colspan="2">Heures de la semaine</th><th colspan="2"></th></tr></thead><tbody>
-      <tr><td>Écart à la base (${fmtH(a.cible)})</td><td class="v">${a.avantEmb ? '—' : sgn(a.ecart)}</td><td>Au-delà de ${state.rules.legale}h (durée légale)</td><td class="v">${fmtH(a.dep.au35)}</td></tr>
+      <tr><td>Écart à la base (${fmtH(a.cible)})</td><td class="v">${a.horsContrat ? '—' : sgn(a.ecart)}</td><td>Au-delà de ${state.rules.legale}h (durée légale)</td><td class="v">${fmtH(a.dep.au35)}</td></tr>
       <tr><td>Au-delà de ${state.rules.maxSem}h (maxi semaine)</td><td class="v" style="${a.dep.au48 ? 'color:var(--neg)' : ''}">${fmtH(a.dep.au48)}</td><td>Au-delà de ${state.rules.maxJour}h par jour (cumul)</td><td class="v" style="${a.dep.au10 ? 'color:var(--neg)' : ''}">${fmtH(a.dep.au10)}</td></tr>
       <tr><td>Heures de nuit</td><td class="v">${fmtH(a.dep.nuit)}</td><td>Dimanche travaillé</td><td class="v">${fmtH(a.dep.dimanche)}</td></tr>
       <tr><td>Fériés travaillés</td><td class="v">${fmtH(a.dep.ferie)}</td><td>Moyenne ${state.rules.moyN} sem. au-delà de ${state.rules.maxMoy}h</td><td class="v" style="${a.dep.moy ? 'color:var(--neg)' : ''}">${fmtH(a.dep.moy)}</td></tr>
@@ -980,8 +984,8 @@ function renderMobile() {
     for (const e of es) {
       const a = analyze(e.id, w), D = a.days[d];
       h += `<div class="mcard ${state.sel === e.id ? 'sel' : ''}">
-        <div class="mhead" data-emp="${e.id}"><div><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais">saisonnier' + (e.embauche ? ' · ' + esc(e.embauche) : '') + '</span>' : ''}</div></div>
-          <div class="mstats">${state.mode === 'comp' ? (c => `<span class="hint">prévu</span><span class="num">${fmtH(c.aP.counter)}</span><span class="hint">réel</span><span class="num">${c.pointe ? fmtH(c.aR.counter) : '—'}</span>${c.pointe ? ecartHtml(c.ecart) : ''}`)(compSemaine(e.id, w)) : `<span class="num" title="Heures comptées sur la semaine">${fmtH(a.counter)}</span>${a.avantEmb ? '<span class="hint">pas encore embauché</span>' : ecartHtml(a.ecart)}`}${ctlHtml(e, a, true)}</div></div>
+        <div class="mhead" data-emp="${e.id}"><div><div class="nm">${esc(e.prenom)} ${esc(e.nom)}</div><div class="meta">${esc(e.poste)}${e.nuit ? (e.poste ? ' · ' : '') + '<span class="nb">nuit</span>' : ''}${e.contrat === 'saisonnier' ? ' <span class="nb sais">saisonnier' + (e.embauche ? ' · ' + esc(e.embauche) : '') + (e.fin ? ' → ' + esc(e.fin) : '') + '</span>' : ''}</div></div>
+          <div class="mstats">${state.mode === 'comp' ? (c => `<span class="hint">prévu</span><span class="num">${fmtH(c.aP.counter)}</span><span class="hint">réel</span><span class="num">${c.pointe ? fmtH(c.aR.counter) : '—'}</span>${c.pointe ? ecartHtml(c.ecart) : ''}`)(compSemaine(e.id, w)) : `<span class="num" title="Heures comptées sur la semaine">${fmtH(a.counter)}</span>${a.avantEmb ? '<span class="hint">pas encore embauché</span>' : a.apresFin ? '<span class="hint">contrat terminé</span>' : ecartHtml(a.ecart)}`}${ctlHtml(e, a, true)}</div></div>
         <div class="mtrack"><div class="ticks"><i style="left:0">0h</i><i style="left:25%">6h</i><i style="left:50%">12h</i><i style="left:75%">18h</i></div>${trackHtml(e.id, w, d * DAY, DAY)}</div>
         <div class="mfoot"><span>${dayName(w, d)} : ${D.work ? '<b style="color:var(--ink)">' + fmtH(D.work) + '</b> de travail · amplitude ' + fmtH(D.last - D.first) + (D.night ? ' · nuit ' + fmtH(D.night) : '') : 'pas de travail'}</span><button class="btn sm" data-add="${e.id}">+ Ajouter</button></div>
         ${state.sel === e.id ? '<div class="mdetail">' + detailHtml(e) + '</div>' : ''}
@@ -1005,13 +1009,23 @@ function embaucheMin(e, w) {
   const d = parseFd(e.embauche || ''); if (!d) return null;
   return (dayIndex(d) - w * 7) * DAY;
 }
+/** Minute (dans la semaine w) où finit le contrat d'un saisonnier (fin du jour de fin de contrat) ; null sinon. */
+function finContratMin(e, w) {
+  if (!e || e.contrat !== 'saisonnier') return null;
+  const d = parseFd(e.fin || ''); if (!d) return null;
+  return (dayIndex(d) + 1 - w * 7) * DAY;
+}
+/** Dates du contrat d'un saisonnier, pour les info-bulles. */
+const contratTxt = e => (e.embauche ? 'embauche le ' + e.embauche : '') + (e.embauche && e.fin ? ' · ' : '') + (e.fin ? 'fin le ' + e.fin : '');
 function avantEmbauche(c) { const m = embaucheMin(emp(c.emp), state.week); return m !== null && c.start < m; }
+function apresFinContrat(c) { const m = finContratMin(emp(c.emp), state.week); return m !== null && c.end > m; }
 function motifRefus(c, ignoreId) {
   if (avantEmbauche(c)) return 'Impossible : avant la date d\'embauche (' + emp(c.emp).embauche + ').';
+  if (apresFinContrat(c)) return 'Impossible : après la fin de contrat (' + emp(c.emp).fin + ').';
   return overlaps(c, ignoreId) ? 'Impossible : ce créneau chevauche un créneau existant.' : '';
 }
 function overlaps(c, ignoreId) {
-  if (avantEmbauche(c)) return true; // pas de créneau avant l'embauche d'un saisonnier
+  if (avantEmbauche(c) || apresFinContrat(c)) return true; // pas de créneau hors contrat d'un saisonnier
   const lay = type(c.type).mode;
   return getSlots(state.week).some(s => s.id !== ignoreId && s.emp === c.emp && type(s.type).mode === lay && s.start < c.end && c.start < s.end);
 }
@@ -1113,14 +1127,14 @@ function copierCreneau(s, jours, salaries) {
     getSlots(state.week).push(c); markSlot(c); faits++;
   }
   closePop(); renderAll();
-  toast(faits ? `${faits} créneau${faits > 1 ? 'x' : ''} copié${faits > 1 ? 's' : ''}` + (occupes ? ` · ${occupes} ignoré${occupes > 1 ? 's' : ''} (place occupée ou avant embauche)` : '')
-              : (occupes ? 'Rien copié : places déjà occupées ou avant la date d\'embauche.' : 'Cochez au moins un autre jour ou un autre salarié.'));
+  toast(faits ? `${faits} créneau${faits > 1 ? 'x' : ''} copié${faits > 1 ? 's' : ''}` + (occupes ? ` · ${occupes} ignoré${occupes > 1 ? 's' : ''} (place occupée ou hors contrat)` : '')
+              : (occupes ? 'Rien copié : places déjà occupées ou hors contrat.' : 'Cochez au moins un autre jour ou un autre salarié.'));
 }
 function addOnDay(e, ev) { // bouton « + Ajouter » (smartphone)
   if (state.mode === 'comp') return toast('Vue Comparaison (lecture seule) : choisissez « Réel » ou « Prévisionnel » pour modifier.');
   const t = type(state.tool === 'gomme' ? 'travail_jour' : state.tool), d = state.mday;
   const c = autoType(t.mode === 'jour' ? { emp: e, type: t.id, start: d * DAY, end: (d + 1) * DAY } : { emp: e, type: t.id, start: d * DAY + 8 * 60, end: d * DAY + 16 * 60 });
-  if (avantEmbauche(c)) return toast(motifRefus(c));
+  if (avantEmbauche(c) || apresFinContrat(c)) return toast(motifRefus(c));
   if (overlaps(c)) return toast('Il y a déjà un créneau à cet endroit : touchez-le pour le modifier.');
   const s = { id: newId(), ...c }; getSlots(state.week).push(s); markSlot(s); renderAll(); openPop(s, ev.clientX, ev.clientY);
 }
@@ -1197,7 +1211,7 @@ function seasonStats(e) {
     if (hasR) { z.semReel++; if (hasP) z.ecartRP += a.counter - dansVersion('prevu', () => analyze(e, w)).counter; }
     z.weeks++; z.tot += a.counter; z.alerts += a.alerts.length; z.recup += a.recup;
     for (const k of ['au35', 'au48', 'au10', 'nuit', 'dimanche', 'ferie']) z[k] += a.dep[k];
-    if (a.avantEmb) { cells.push(null); continue; }
+    if (a.horsContrat) { cells.push(null); continue; }
     if (a.ecart < 0) z.neg -= a.ecart; else z.pos += a.ecart; cells.push(a.ecart);
   }
   const objectif = (emp(e) && emp(e).objectif != null ? emp(e).objectif : state.rules.objectifAnnuel) * 60;
@@ -1273,12 +1287,13 @@ function renderPeriodes() {
 function renderSettings() {
   renderModeles(); renderPeriodes();
   $('#sheetInfo').innerHTML = state.sheetUrl ? `<a href="${esc(state.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a> <span class="hint">· connecté : ${esc(state.user ? state.user.nom : '—')}</span>` : '';
-  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Objectif annuel (h)</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
+  $('#empTable').innerHTML = `<thead><tr><th>Prénom</th><th>Nom</th><th>Station</th><th>Poste</th><th>Contrat</th><th>Date d'embauche</th><th>Fin de contrat</th><th>Objectif annuel (h)</th><th>Travailleur de nuit</th><th>Actif</th><th></th></tr></thead><tbody>` +
     state.emps.map(e => `<tr data-e="${e.id}"><td><input type="text" data-f="prenom" value="${esc(e.prenom)}"></td><td><input type="text" data-f="nom" value="${esc(e.nom)}"></td>
       <td><select data-f="station">${state.stations.map(s => `<option ${s === e.station ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></td>
       <td><input type="text" data-f="poste" value="${esc(e.poste)}"></td>
       <td><select data-f="contrat"><option value="permanent" ${e.contrat !== 'saisonnier' ? 'selected' : ''}>Permanent</option><option value="saisonnier" ${e.contrat === 'saisonnier' ? 'selected' : ''}>Saisonnier</option></select></td>
       <td>${e.contrat === 'saisonnier' ? `<input type="text" class="date" data-f="embauche" placeholder="jj/mm/aaaa" value="${esc(e.embauche || '')}">` : '<span class="hint">—</span>'}</td>
+      <td>${e.contrat === 'saisonnier' ? `<input type="text" class="date" data-f="fin" placeholder="jj/mm/aaaa" value="${esc(e.fin || '')}">` : '<span class="hint">—</span>'}</td>
       <td><input type="number" min="0" step="1" data-f="objectif" value="${e.objectif == null ? '' : e.objectif}" placeholder="${state.rules.objectifAnnuel}" title="Vide = objectif par défaut (${state.rules.objectifAnnuel}h)"></td>
       <td style="text-align:center"><input type="checkbox" data-f="nuit" ${e.nuit ? 'checked' : ''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="actif" ${e.actif ? 'checked' : ''}></td>
@@ -1314,6 +1329,13 @@ $('#v-reglages').addEventListener('change', ev => {
     const e = emp(t.closest('tr').dataset.e), d = parseFd(t.value);
     if (t.value.trim() && !d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); }
     e.embauche = d ? fd(d) : '';
+    if (d && parseFd(e.fin || '') && parseFd(e.fin) < d) toast('Attention : la fin de contrat est avant la date d\'embauche.');
+  }
+  else if (t.dataset.f === 'fin') {
+    const e = emp(t.closest('tr').dataset.e), d = parseFd(t.value);
+    if (t.value.trim() && !d) { toast('Date invalide : utilisez le format jj/mm/aaaa'); return renderSettings(); }
+    e.fin = d ? fd(d) : '';
+    if (d && parseFd(e.embauche || '') && d < parseFd(e.embauche)) toast('Attention : la fin de contrat est avant la date d\'embauche.');
   }
   else if (t.dataset.pf) {
     const per = state.periodes[+t.closest('tr').dataset.p], f = t.dataset.pf;
@@ -1355,7 +1377,7 @@ $('#v-reglages').addEventListener('click', ev => {
   else if (t.dataset.delType) { if ([...Object.values(state.slotsV.prevu), ...Object.values(state.slotsV.reel)].some(a => a.some(z => z.type === t.dataset.delType))) return toast('Ce type est utilisé dans le planning : impossible de le supprimer.'); state.types = state.types.filter(x => x.id !== t.dataset.delType); }
   else if (t.dataset.delFer) state.feries = state.feries.filter(x => x.d !== t.dataset.delFer);
   else if (t.dataset.delSt) { const s = state.stations[+t.dataset.delSt]; if (state.emps.some(e => e.station === s)) return toast('Déplacez d\'abord les salariés de cette station.'); state.stations.splice(+t.dataset.delSt, 1); }
-  else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '' });
+  else if (t.id === 'addEmp') state.emps.push({ id: 'S' + newId().slice(1), nom: 'Nouveau', prenom: 'Salarié', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '', fin: '' });
   else if (t.id === 'addType') state.types.push({ id: 'type_' + newId().slice(1), nom: 'Nouveau type', couleur: '#0891b2', mode: 'jour', compteur: true, effectif: false, forfait: 7, deduit: false, abrev: '' });
   else if (t.dataset.delPer) state.periodes.splice(+t.dataset.delPer, 1);
   else if (t.id === 'addPer') state.periodes.push({ nom: 'Période forte', du: iso(weekDate(state.week)), au: iso(weekDate(state.week + 4, 6)), base: 40 });
@@ -1429,8 +1451,9 @@ function normaliserCase(raw) {
 function poserJour(eId, w, j, valeur, remplacer, cpt) {
   const morceaux = String(valeur || '').split('+').map(v => lireCaseModele(v)).filter(Boolean);
   if (!morceaux.length) return;
-  const e = emp(eId), f = ferieAt(w, j), em = embaucheMin(e, w);
+  const e = emp(eId), f = ferieAt(w, j), em = embaucheMin(e, w), fm = finContratMin(e, w);
   if (em !== null && j * DAY < em) { cpt.ignores++; return; }                 // avant l'embauche
+  if (fm !== null && j * DAY >= fm) { cpt.ignores++; return; }                // après la fin de contrat
   const memeJour = getSlots(w).filter(s => s.emp === eId && Math.floor(s.start / DAY) === j);
   if (memeJour.length && !remplacer) { cpt.gardes++; return; }               // jour déjà rempli : on garde
   memeJour.forEach(s => { removeSlotW(s, w); cpt.remplaces++; });
@@ -1449,7 +1472,7 @@ function poserJour(eId, w, j, valeur, remplacer, cpt) {
 const nouveauCompteur = () => ({ faits: 0, ignores: 0, remplaces: 0, gardes: 0 });
 function resumeCompteur(r) {
   return `${r.faits} créneau${r.faits > 1 ? 'x' : ''} posé${r.faits > 1 ? 's' : ''}` + (r.remplaces ? ` · ${r.remplaces} remplacé(s)` : '')
-    + (r.gardes ? ` · ${r.gardes} jour(s) déjà remplis gardés` : '') + (r.ignores ? ` · ${r.ignores} ignoré(s) (avant embauche, férié chômé ou chevauchement)` : '');
+    + (r.gardes ? ` · ${r.gardes} jour(s) déjà remplis gardés` : '') + (r.ignores ? ` · ${r.ignores} ignoré(s) (hors contrat, férié chômé ou chevauchement)` : '');
 }
 /** Pose un modèle pour des salariés sur une période (jours : valeurs éventuellement modifiées avant application). */
 function appliquerModele(m, salaries, du, au, remplacer, jours) {
@@ -1726,7 +1749,7 @@ function ouvrirImport() {
       if (L.cible === '__ignorer') continue;
       if (L.cible === '__creer') {
         const mots = L.nom.trim().split(/\s+/), nomM = mots.filter(m => m === m.toUpperCase() && /[A-Z]/.test(m));
-        const nouveau = { id: 'S' + newId().slice(1), nom: nomM.join(' ') || mots[0], prenom: mots.filter(m => !nomM.includes(m)).join(' ') || '', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '', objectif: null };
+        const nouveau = { id: 'S' + newId().slice(1), nom: nomM.join(' ') || mots[0], prenom: mots.filter(m => !nomM.includes(m)).join(' ') || '', station: state.stations[0], poste: '', nuit: false, actif: true, contrat: 'permanent', embauche: '', fin: '', objectif: null };
         state.emps.push(nouveau); L.cible = nouveau.id; crees++;
       }
       for (const [d, v] of Object.entries(L.jours)) {

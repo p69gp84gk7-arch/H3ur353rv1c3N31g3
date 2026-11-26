@@ -55,6 +55,7 @@ function chargerDonnees(jeton) {
     poste: String(r['Poste']), nuit: vrai_(r['Travailleur de nuit']), actif: vrai_(r['Actif']),
     contrat: /^sais/i.test(String(r['Contrat'] || '')) ? 'saisonnier' : 'permanent',
     embauche: r["Date d'embauche"] instanceof Date ? versTexte_(r["Date d'embauche"], 'dd/MM/yyyy') : '',
+    fin: r['Date de fin de contrat'] instanceof Date ? versTexte_(r['Date de fin de contrat'], 'dd/MM/yyyy') : '',
     objectif: r['Objectif annuel (h)'] === '' || r['Objectif annuel (h)'] == null || isNaN(Number(r['Objectif annuel (h)'])) ? null : Number(r['Objectif annuel (h)']),
   }));
   const stations = lireTable_('Stations').sort((a, b) => (Number(a['Ordre']) || 0) - (Number(b['Ordre']) || 0)).map(r => String(r['Nom']));
@@ -143,6 +144,7 @@ function enregistrerReglages(jeton, r) {
       'Travailleur de nuit': !!e.nuit, 'Actif': !!e.actif,
       'Contrat': e.contrat === 'saisonnier' ? 'Saisonnier' : 'Permanent',
       "Date d'embauche": e.contrat === 'saisonnier' && e.embauche ? texteVersDate_(e.embauche) : '',
+      'Date de fin de contrat': e.contrat === 'saisonnier' && e.fin ? texteVersDate_(e.fin) : '',
       'Objectif annuel (h)': e.objectif === null || e.objectif === undefined || e.objectif === '' ? '' : Number(e.objectif),
       'Créé le': anciens[String(e.id)] || maintenant, 'Modifié le': maintenant,
     })));
